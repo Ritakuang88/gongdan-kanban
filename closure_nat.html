@@ -18,15 +18,6 @@
   .btn-exp:disabled { opacity: .5; cursor: wait; }
   header { display: flex; align-items: flex-start; }
   header .hd-l { flex: 1; min-width: 0; }
-  header .hd-r { margin-left: auto; padding-top: 2px; }
-  .btn-upd { padding: 6px 16px; font-size: 13px; font-weight: 700; border: 1px solid var(--amber); color: var(--amber); background: #fff; border-radius: 6px; cursor: pointer; white-space: nowrap; }
-  .btn-upd:hover { background: var(--amber); color: #fff; }
-  .modal-c { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: min(660px, 94vw); max-height: 84vh; }
-  .upd-steps { font-size: 13px; line-height: 2.1; color: var(--ink); margin: 4px 0 10px; }
-  .upd-cmd { width: 100%; box-sizing: border-box; font-size: 12px; line-height: 1.8; padding: 10px 12px; border: 1px solid #d8d8d8; border-radius: 8px; background: #fafaf7; color: var(--ink); resize: none; font-family: inherit; }
-  .btn-copy { margin-top: 10px; padding: 6px 18px; font-size: 13px; font-weight: 700; border: none; border-radius: 6px; background: var(--dark); color: #fff; cursor: pointer; }
-  .btn-copy:hover { opacity: .88; }
-  .upd-note { font-size: 12px; color: var(--muted); margin-top: 12px; line-height: 1.9; border-top: 1px dashed #e0e0e0; padding-top: 10px; }
   .caliber b.t { display: block; margin-bottom: 4px; font-size: 13px; }
   .fbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; background: #fff; border-radius: 10px; padding: 12px 16px; box-shadow: 0 1px 4px rgba(0,0,0,.08); margin-bottom: 16px; }
   .fbar .ft { font-size: 13px; font-weight: 700; color: var(--dark); margin-right: 2px; }
@@ -111,7 +102,6 @@
       <h1>⏱️ 地区工单遵时闭环率</h1>
       <div class="meta" id="metaLine"></div>
     </div>
-    <div class="hd-r"><button class="btn-upd" onclick="openUpd()">⟳ 更新数据</button></div>
   </header>
 
   <div class="fbar">
@@ -192,21 +182,6 @@
   <span class="mclose" id="detClose">✕</span>
   <h3 id="detTitle"></h3>
   <div class="tblx"><table id="detTbl"></table></div>
-</div>
-
-<div class="modal-mask" id="updMask"></div>
-<div class="modal modal-c" id="updModal">
-  <span class="mclose" onclick="closeUpd()">✕</span>
-  <h3>⟳ 一键更新看板数据</h3>
-  <div class="upd-steps">
-    ① 点击下方「📋 复制指令」<br>
-    ② 新开一个 Kimi 会话，粘贴并发送该指令<br>
-    ③ 全程自动完成：从BI下载最新明细 → 按既定统计口径清洗重建 → 保存新版本
-  </div>
-  <textarea class="upd-cmd" id="updCmd" readonly rows="4"></textarea>
-  <button class="btn-copy" onclick="copyUpdCmd()">📋 复制指令</button>
-  <span id="updTip" style="font-size:12px;color:var(--green);margin-left:10px;font-weight:700"></span>
-  <div class="upd-note">发送后无需再手动上传 Excel。跑完后到版本卡片预览确认，点「发布」线上即生效。<br>首次使用若提示「未注册BI下载流程」：在有数BI界面设好筛选条件 → 保存网页 HTML → 发给 Kimi 注册一次，以后一劳永逸。</div>
 </div>
 
 <script>
@@ -663,18 +638,6 @@ window.exportRep = exportRep;
 
 // 弹窗锚定在触发数字附近：下方优先，放不下则弹到上方（2026-10-20 用户要求：不要固定在页面高处）
 var detAnchor = null;
-var UPD_CMD = '引用技能 bi-download 和 ticket-closure-nat，执行「一键更新看板」：从BI下载《升级客诉工单明细》和《十大客诉明细》（创建时间=上月1日至今），拼接历史基线后按既定统计口径重建地区工单遵时闭环率看板并保存新版本。';
-function openUpd(){ $('updCmd').value = UPD_CMD; $('updTip').textContent = ''; $('updMask').classList.add('open'); $('updModal').classList.add('open'); }
-function closeUpd(){ $('updMask').classList.remove('open'); $('updModal').classList.remove('open'); }
-function copyUpdCmd(){
-  var t = $('updCmd');
-  function ok(){ $('updTip').textContent = '已复制 ✓'; }
-  function fb(){ t.focus(); t.select(); try { document.execCommand('copy'); ok(); } catch(e){ $('updTip').textContent = '请手动全选复制'; } }
-  if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(t.value).then(ok, fb); }
-  else fb();
-}
-window.openUpd = openUpd; window.closeUpd = closeUpd; window.copyUpdCmd = copyUpdCmd;
-
 function openModalNear(el){
   var m = $('detModal');
   $('detMask').classList.add('open'); m.classList.add('open');
@@ -783,7 +746,6 @@ function fillDetail(mon, rgk, lab, it, sc){
 }
 $('detClose').addEventListener('click', function(){ $('detMask').classList.remove('open'); $('detModal').classList.remove('open'); });
 $('detMask').addEventListener('click', function(){ $('detMask').classList.remove('open'); $('detModal').classList.remove('open'); });
-$('updMask').addEventListener('click', function(){ $('updMask').classList.remove('open'); $('updModal').classList.remove('open'); });
 
 // ---------- 初始化 ----------
 var SDATE=(+E.asof.slice(5,7))+'月'+(+E.asof.slice(8,10))+'日'; document.querySelectorAll('.srcd').forEach(function(e){e.textContent=SDATE;}); $('metaLine').textContent = '数据截止：'+E.asof+' ｜ 数据源：7月1日-'+SDATE+'升级客诉工单明细（表1/指标卡）、7月-'+SDATE+'十大客诉明细（表2/反复发生/下钻） ｜ 生成时间：'+new Date().toLocaleString('zh-CN');
