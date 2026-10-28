@@ -223,7 +223,7 @@ var DEF_MON = PERIODS[PERIODS.length-1].key;   // 默认最新月份
 
 function pByKey(k){ for(var i=0;i<PERIODS.length;i++) if(PERIODS[i].key===k) return PERIODS[i]; return PERIODS[0]; }
 function pct(a,b){ if(!b) return '—'; return Math.round(a/b*100)+'%'; }
-function rateCls(a,b){ if(!b) return ''; var r=a/b; return r>=0.9?'rate-g':'rate-r'; }
+function rateCls(a,b){ if(!b) return ''; var r=a/b; return Math.round(r*100)>=90?'rate-g':'rate-r'; }  // 按页面显示整数判定：显示90%即绿
 function fmtInt(n){ return (n==null?'—':Number(n).toLocaleString('zh-CN')); }
 function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 function dlt(cur,prev,neutralZero){
