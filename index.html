@@ -63,7 +63,8 @@
 .wk-tbl td,.wk-tbl th{text-align:center}
 .wk-tbl td:first-child,.wk-tbl th:first-child{text-align:left;font-weight:700}
 .wk-tbl tr.wk-hl td{background:#fff3e0}
-.wk-tbl tr.wk-tot td{background:#f2f0e9;font-weight:700}
+.wk-tbl tr.wk-tot td{background:#8a8a8a;color:#fff;font-weight:700}
+.wk-tbl tr.wk-tot td *{color:#fff!important;font-weight:700}
 .wk-up{color:#c62828;font-weight:700}
 .wk-dn{color:#2e7d32;font-weight:700}
 .duo{display:grid;grid-template-columns:1fr 1fr;gap:18px}
@@ -629,7 +630,7 @@ function prevOTBaseline(){
     const keys = Object.keys(h).filter(k=>k<fmtD(TODAY)).sort();
     if(keys.length){ const k = keys[keys.length-1]; loc = {date: (+k.slice(5,7))+'月'+(+k.slice(8,10))+'日', key: k, snap: h[k]}; }
   }catch(e){}
-  if(emb && loc) return (loc.key >= emb.key ? loc : emb);   // 内置与本地结存取更近的一份
+  if(emb && loc) return (loc.key > emb.key ? loc : emb);    // 同日内置基线优先；仅本地结存更新时才用本地
   return loc || emb;
 }
 function updateHeadOT(rg){
@@ -874,11 +875,16 @@ function renderClearAlert(rg){
   const prevIds = rg ? (base.snap.idsByRg[rg]||[]) : Object.values(base.snap.idsByRg).flat();
   if(!prevIds.length){ box.innerHTML=''; return; }
   const curIds = new Set(DATA.map(r=>String(r['工单编号'])));
+  const curOtIds = new Set(DATA.filter(r=>(!rg || r['大区']===rg) && r['超时状态']==='已超时').map(r=>String(r['工单编号'])));
+  const prevSet = new Set(prevIds.map(id=>String(id)));
   const remainIds = prevIds.filter(id=>curIds.has(id));
+  const remainOt = prevIds.filter(id=>curOtIds.has(id)).length;
+  const curOt = curOtIds.size;
+  const newOt = [...curOtIds].filter(id=>!prevSet.has(id)).length;
   const cleared = prevIds.length - remainIds.length;
   const rate = (cleared/prevIds.length*100).toFixed(1);
   const lv = rate>=30 ? 'ok' : rate>=15 ? 'warn' : 'bad';
-  box.innerHTML = `<div class="clear-alert ${lv}">（${rg||'全部大区'} · 较昨日 ${base.date}）：昨日已超时 <b>${prevIds.length}</b> 单，今日已清 <b>${cleared}</b> 单（已清积压占比 <b>${rate}%</b>），剩余 <span class="drill hot" id="clearRemain"><b>${remainIds.length}</b></span> 单仍在超时清单内。</div>`;
+  box.innerHTML = `<div class="clear-alert ${lv}">（${rg||'全部大区'} · 较昨日 ${base.date}）：昨日已超时 <b>${prevIds.length}</b> 单，今日已清 <b>${cleared}</b> 单（已清积压占比 <b>${rate}%</b>），剩余 <span class="drill hot" id="clearRemain"><b>${remainIds.length}</b></span> 单昨日超时工单仍未闭环（今日仍超时 <b>${remainOt}</b> 单）；今日当前已超时 <b>${curOt}</b> 单，含新增/转入 <b>${newOt}</b> 单。</div>`;
   document.getElementById('clearRemain').onclick = ()=>{
     const st = new Set(remainIds);
     const m = DATA.filter(r=>st.has(String(r['工单编号'])));
