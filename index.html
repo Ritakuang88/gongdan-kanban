@@ -138,6 +138,20 @@
   .filters label{font-size:12px;color:var(--sub);display:block;margin-bottom:4px}
   .filters select,.filters input{padding:7px 10px;border:1px solid var(--line);border-radius:6px;background:#fff;font-size:13px;min-width:120px}
   .filters input{width:150px}
+  .filter-submit{min-height:38px;white-space:nowrap}
+  .filter-submit:focus-visible,.modal-close:focus-visible{outline:3px solid rgba(43,74,203,.35);outline-offset:2px}
+  .grouped-drill{display:grid;gap:14px}
+  .shelf-group{border:1px solid var(--line);border-radius:8px;overflow:hidden;background:#fff}
+  .shelf-group-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 14px;background:#f0f2f8;line-height:1.7}
+  .shelf-group-head strong{color:#1c2b6d;font-size:14px}
+  .shelf-group-id{margin-left:12px;color:#666;font-size:12px}
+  .shelf-count{flex:0 0 auto;font-weight:700;color:#8e3b2f;white-space:nowrap}
+  .shelf-issue{display:grid;grid-template-columns:220px minmax(0,1fr);gap:16px;padding:13px 14px;border-top:1px solid var(--line)}
+  .shelf-issue-meta{font-size:12px;color:#666;line-height:1.8;white-space:normal}
+  .shelf-issue-title{font-size:13px;font-weight:700;color:var(--head);margin-bottom:4px}
+  .shelf-issue-title .tag{margin-left:6px;vertical-align:1px}
+  .shelf-issue-content{white-space:normal;line-height:1.75;min-width:0;word-break:break-word;color:#33302b}
+  .grouped-empty{padding:28px;text-align:center;color:var(--sub)}
   .msw{position:relative;display:inline-block;min-width:120px}
   .msw-btn{padding:7px 10px;border:1px solid var(--line);border-radius:6px;background:#fff;font-size:13px;width:100%;min-width:120px;text-align:left;cursor:pointer;color:var(--ink)}
   .msw-btn::after{content:'▾';float:right;color:#999}
@@ -200,7 +214,25 @@
     #pivotRegion table.collapsed th:nth-child(n+5):not(:last-child),
     #pivotRegion table.collapsed td:nth-child(n+5):not(:last-child){display:none}
     #detailTable table.compact .col-x{display:none}
-    .modal{width:96vw;max-height:88vh}
+    .modal-mask{padding:8px}
+    .modal{width:100%;max-width:100%;max-height:88vh;max-height:92dvh}
+    .modal-head{padding:10px 12px 10px 14px;gap:8px}
+    .modal-head b{font-size:14px;line-height:1.5}
+    .modal-close{min-width:44px;min-height:44px;margin:-10px -8px -10px 0}
+    .modal-body{padding:12px;min-height:0}
+    .modal .foot{padding:8px 14px;line-height:1.6}
+    #modalFilters{flex:0 0 auto;max-height:38vh;max-height:38dvh;overflow-y:auto;overscroll-behavior:contain;padding:10px 12px 4px !important;gap:10px}
+    #modalFilters>div{flex:1 1 calc(50% - 10px);min-width:0}
+    .filters{gap:10px}
+    .filters select,.filters input{min-height:44px;font-size:14px}
+    .filters .btn{min-height:44px;font-size:14px}
+    .filters .filter-submit{flex:1 1 100%;min-height:44px}
+    .grouped-drill{gap:10px;min-width:0}
+    .shelf-group-head{align-items:flex-start;flex-wrap:wrap;padding:10px 12px;gap:4px 10px}
+    .shelf-group-id{display:block;margin:2px 0 0;line-height:1.6}
+    .shelf-issue{grid-template-columns:1fr;gap:8px;padding:12px}
+    .shelf-issue-meta{line-height:1.7}
+    .shelf-issue-content{font-size:13px}
     .mobile-only{display:inline-block}
   }
 
@@ -359,6 +391,7 @@ td.tl-ot-r{color:#FF0000;font-weight:700}
         <div><label>大区</label><select id="pvRg"><option value="">全部</option></select></div>
         <div><label>新装/留存</label><select id="pvXz"><option value="">全部</option><option>新装</option><option>留存</option><option>-</option></select></div>
         <div><label>客户等级（可多选）</label><select id="pvLv" class="lv-ms"><option value="">全部</option><option>S级</option><option>A级</option><option>B级</option><option>C级</option><option>D级</option><option>E级</option><option>无等级</option></select></div>
+        <button class="btn primary filter-submit" type="button" id="queryPivot">查询</button>
         <button class="btn" id="pvFold">展开全部二级分类</button>
         <button class="btn mobile-only" id="pvToggle">展开全部大区</button>
       </div>
@@ -366,13 +399,14 @@ td.tl-ot-r{color:#FF0000;font-weight:700}
       <div id="pivotRegion"></div>
     </div>
     <div class="panel">
-      <h3>未闭环-超时积压处理人 TOP20<span class="hint-drill">（点击单量可下钻查看该处理人工单明细）</span></h3>
+      <h3>未闭环-超时积压处理人 TOP20<span class="hint-drill">（点击单量可按货架合并查看该处理人的全部问题）</span></h3>
       <div class="filters">
         <div><label>关键词（姓名/货架编码/ID/工单编号）</label><input id="thName" placeholder="姓名 / 货架编码 / 货架ID / 工单编号"></div>
         <div><label>大区</label><select id="thRg"><option value="">全部</option></select></div>
         <div><label>地区（关键词搜索）</label><input id="thDt" placeholder="如 南京"></div>
         <div><label>新装/留存</label><select id="thXz"><option value="">全部</option><option>新装</option><option>留存</option><option>-</option></select></div>
         <div><label>客户等级（可多选）</label><select id="thLv" class="lv-ms"><option value="">全部</option><option>S级</option><option>A级</option><option>B级</option><option>C级</option><option>D级</option><option>E级</option><option>无等级</option></select></div>
+        <button class="btn primary filter-submit" type="button" id="queryTopHandlers">查询</button>
       </div>
       <div id="topHandlers"></div>
     </div>
@@ -397,6 +431,7 @@ td.tl-ot-r{color:#FF0000;font-weight:700}
         <div><label>工单编号（关键词搜索）</label><input data-kw="工单编号" placeholder="输入工单编号"></div>
         <div><label>客户等级（可多选）</label><select data-k="客户等级" class="lv-ms"><option value="">全部</option><option>S级</option><option>A级</option><option>B级</option><option>C级</option><option>D级</option><option>E级</option><option>无等级</option></select></div>
         <div><label>工单内容（关键词搜索）</label><input data-kw="工单内容" placeholder="输入内容关键词"></div>
+        <button class="btn primary filter-submit" type="button" id="queryDetail">查询</button>
         <button class="btn" id="resetV2">重置</button>
         <button class="btn mobile-only" id="dtToggle">展开全部列</button>
       </div>
@@ -417,6 +452,7 @@ td.tl-ot-r{color:#FF0000;font-weight:700}
         <div><label>新装/留存</label><select data-k="新装/留存"><option value="">全部</option><option>新装</option><option>留存</option><option>-</option></select></div>
         <div><label>客户等级（可多选）</label><select data-k="客户等级" class="lv-ms"><option value="">全部</option><option>S级</option><option>A级</option><option>B级</option><option>C级</option><option>D级</option><option>E级</option><option>无等级</option></select></div>
         <div><label>威胁撤架/丢柜</label><select id="shelfRisk"><option value="">全部</option><option value="1">仅🚨威胁撤架/丢柜</option></select></div>
+        <button class="btn primary filter-submit" type="button" id="queryShelf">查询</button>
         <button class="btn" id="resetShelf">重置</button>
       </div>
       <div class="scroll"><div id="riskTable"></div></div>
@@ -468,6 +504,7 @@ td.tl-ot-r{color:#FF0000;font-weight:700}
       <div><label>工单内容（关键词搜索）</label><input data-kw="工单内容" placeholder="输入内容关键词"></div>
       <div><label>新装/留存</label><select data-k="新装/留存"><option value="">全部</option><option>新装</option><option>留存</option><option>-</option></select></div>
       <div><label>客户等级（可多选）</label><select data-k="客户等级" class="lv-ms"><option value="">全部</option><option>S级</option><option>A级</option><option>B级</option><option>C级</option><option>D级</option><option>E级</option><option>无等级</option></select></div>
+      <button class="btn primary filter-submit" type="button" id="queryModal">查询</button>
     </div>
     <div class="modal-body" id="modalBody"></div>
     <div class="foot" id="modalFoot"></div>
@@ -656,13 +693,46 @@ function updateHeadOT(rg){
 // ============ 下钻弹窗（支持筛选 + 列宽拖拽） ============
 const DRILL_COLS = ['处理人','货架编码','货架ID','创建时间','新装/留存','客户等级','工单编号','工单分类三级','工单内容','大区','地区','超时状态','超时天数'];
 let modalRows = [];
-function showDrill(title, rows){
+let modalGroupByShelf = false;
+function escText(v){
+  return String(v??'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function showDrill(title, rows, options = {}){
   modalRows = rows;
+  modalGroupByShelf = options.groupByShelf === true;
   document.getElementById('modalTitle').textContent = title;
   document.querySelectorAll('#modalFilters input').forEach(i=>i.value='');
   document.querySelectorAll('#modalFilters select').forEach(resetSelect);
   renderModalRows();
   document.getElementById('modalMask').classList.add('show');
+}
+function renderGroupedModalRows(rows){
+  const groups = new Map();
+  rows.forEach(r=>{
+    const key = [r['处理人']??'',r['货架编码']??'',r['货架ID']??''].join('\u0001');
+    if(!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(r);
+  });
+  const tag = s => s==='已超时'?'ot':(s==='未超时'?'ok':'soon');
+  let html = '<div class="grouped-drill">';
+  groups.forEach(items=>{
+    const first = items[0];
+    const shelfCode = first['货架编码'] || '（无货架编码）';
+    const shelfId = first['货架ID'] || '—';
+    html += `<section class="shelf-group"><div class="shelf-group-head"><div><strong>${escText(shelfCode)}</strong><span class="shelf-group-id">货架ID：${escText(shelfId)} ｜ 处理人：${escText(first['处理人'])}</span></div><span class="shelf-count">${items.length} 个问题</span></div>`;
+    items.forEach(r=>{
+      const lv = r['客户等级'] ?? '';
+      const lvCls = lv==='S级'?'s':lv==='A级'?'a':lv==='B级'?'b':'y';
+      const status = r['超时状态'] ?? '';
+      const days = r['超时天数'];
+      html += `<div class="shelf-issue"><div class="shelf-issue-meta"><div>工单编号：${escText(r['工单编号'])}</div><div>创建时间：${escText(fmtDT(r['创建时间']))}</div><div>${escText(r['大区'])} ${escText(r['地区'])} ｜ ${escText(r['新装/留存'])}</div><div>客户等级：<span class="lvl ${lvCls}">${escText(lv)}</span></div></div><div><div class="shelf-issue-title">${escText(r['工单分类三级'])} <span class="tag ${tag(status)}">${escText(status)}</span>${Number(days)>0?`<span class="tag ot">超时 ${escText(days)} 天</span>`:''}</div><div class="shelf-issue-content">${escText(maskTel(r['工单内容']))}</div></div></div>`;
+    });
+    html += '</section>';
+  });
+  if(!rows.length) html += '<div class="grouped-empty">当前筛选条件下没有问题</div>';
+  html += '</div>';
+  document.getElementById('modalBody').innerHTML = html;
+  document.getElementById('modalFoot').textContent = `共 ${rows.length} 单（${groups.size} 个货架，筛选后）／ 下钻共 ${modalRows.length} 单 ｜ 同一处理人、同一货架的问题已合并展示`;
 }
 function renderModalRows(){
   const kw = {};
@@ -672,6 +742,7 @@ function renderModalRows(){
   let rows = modalRows.filter(r=>Object.entries(kw).every(([k,v])=>k.split('|').some(f=>String(r[f]??'').includes(v))));
   rows = rows.filter(r=>Object.entries(sel).every(([k,v])=>v.includes(String(r[k]??''))));
   rows = [...rows].sort(cmpOrder);   // 与明细表同一排序规则
+  if(modalGroupByShelf){ renderGroupedModalRows(rows); return; }
   const tag = s => s==='已超时'?'ot':(s==='未超时'?'ok':'soon');
   let html = `<table><thead><tr>${DRILL_COLS.map(c=>`<th>${c==='超时状态'?'是否已超时':c}</th>`).join('')}</tr></thead><tbody>`;
   rows.forEach(r=>{
@@ -1110,7 +1181,7 @@ function renderTopHandlers(){
     if(el.dataset.t==='sa'){ m = ot.filter(r=>r['处理人']===el.dataset.h && (r['客户等级']==='S级'||r['客户等级']==='A级')); ttl = `处理人 ${el.dataset.h} · SA级已超时`; }
     if(el.dataset.t==='ok'){ m = okRows.filter(r=>r['处理人']===el.dataset.h); ttl = `处理人 ${el.dataset.h} · 未超时（正常处理时限内）`; }
     if(el.dataset.t==='all'){ m = [...ot, ...soonRows, ...okRows].filter(r=>r['处理人']===el.dataset.h); ttl = `处理人 ${el.dataset.h} · 未处理工单总计（含已超时/即将超时/未超时）`; }
-    showDrill(`${ttl}（${m.length} 单）`, m);
+    showDrill(`${ttl}（${m.length} 单）`, m, {groupByShelf:true});
   });
 }
 document.getElementById('thName').addEventListener('input', renderTopHandlers);
@@ -1281,6 +1352,29 @@ document.getElementById('resetShelf').onclick = ()=>{
 };
 
 function renderV3(){ renderShelfTable(); }
+function bindQueryConfirm(root, renderFn, buttonId){
+  if(!root) return;
+  root.querySelectorAll('input').forEach(input=>{
+    input.setAttribute('enterkeyhint','search');
+    input.setAttribute('inputmode','search');
+    input.addEventListener('keydown', e=>{
+      if(e.key!=='Enter' || e.isComposing) return;
+      e.preventDefault();
+      renderFn();
+      input.blur();
+    });
+  });
+  const button = document.getElementById(buttonId);
+  if(button) button.addEventListener('click', ()=>{
+    renderFn();
+    if(root.contains(document.activeElement)) document.activeElement.blur();
+  });
+}
+bindQueryConfirm(document.getElementById('pvL2').closest('.filters'), renderV1Pivot, 'queryPivot');
+bindQueryConfirm(document.getElementById('thName').closest('.filters'), renderTopHandlers, 'queryTopHandlers');
+bindQueryConfirm(document.getElementById('detailFilters'), renderDetailTable, 'queryDetail');
+bindQueryConfirm(document.getElementById('shelfFilters'), renderShelfTable, 'queryShelf');
+bindQueryConfirm(document.getElementById('modalFilters'), renderModalRows, 'queryModal');
 function renderNavBadges(){
   document.getElementById('nbV1').textContent = DATA.filter(r=>r['超时状态']==='已超时').length;
   document.getElementById('nbV2').textContent = DATA.length;
