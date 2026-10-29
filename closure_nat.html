@@ -108,7 +108,7 @@
 <div class="wrap">
   <header>
     <div class="hd-l">
-      <h1>⏱️ 地区工单遵时闭环率</h1>
+      <h1>⏱️ 地区工单遵时闭环率 <span id="refreshingTip" style="display:none;color:#d32f2f;font-size:.72em;font-weight:700;margin-left:4px">数据刷新中请稍等</span></h1>
       <div class="meta" id="metaLine"></div>
     </div>
 
@@ -806,6 +806,16 @@ kpiAndRep();
 renderRep();
 renderT1();
 renderT2();
+// 数据刷新中提示：北京时间每天 10:15-10:45（每日自动刷新窗口）显示
+(function(){
+  var utc = Date.now() + new Date().getTimezoneOffset()*60000;
+  var bj = new Date(utc + 8*3600000);
+  var mins = bj.getHours()*60 + bj.getMinutes();
+  if(mins >= 615 && mins < 645){
+    var tip = document.getElementById('refreshingTip');
+    if(tip) tip.style.display = '';
+  }
+})();
 })();
 </script>
 </body>
