@@ -232,6 +232,17 @@
     .shelf-issue{grid-template-columns:1fr;gap:8px;padding:12px}
     .shelf-issue-meta{line-height:1.7}
     .shelf-issue-content{font-size:13px}
+    /* 手机端：超时大区分析只保留「超时积压处理人」板块，其余默认隐藏 */
+    nav button[data-v="v3"]{display:none}
+    #v1 .panel:not(.th-panel){display:none}
+    /* 手机端：积压处理人 + 工单明细 筛选器缩小 */
+    #v1 .th-panel .filters,#detailFilters{gap:6px}
+    #v1 .th-panel .filters>div,#detailFilters>div{flex:1 1 calc(50% - 6px);min-width:0}
+    #v1 .th-panel .filters label,#detailFilters label{font-size:11px;margin-bottom:2px}
+    #v1 .th-panel .filters select,#v1 .th-panel .filters input,#detailFilters select,#detailFilters input{min-height:32px;font-size:12px;padding:4px 8px}
+    #v1 .th-panel .filters .btn,#detailFilters .btn{min-height:32px;font-size:12px;padding:5px 10px}
+    #v1 .th-panel .filters .msw,#v1 .th-panel .filters .msw-btn,#detailFilters .msw,#detailFilters .msw-btn{min-width:0;width:100%}
+    #v1 .th-panel .filters .msw-btn,#detailFilters .msw-btn{min-height:32px;font-size:12px;padding:5px 8px}
     .mobile-only{display:inline-block}
   }
 
@@ -397,7 +408,7 @@ td.tl-ot-r{color:#FF0000;font-weight:700}
       <div id="trendBox" style="display:none"></div>
       <div id="pivotRegion"></div>
     </div>
-    <div class="panel">
+    <div class="panel th-panel">
       <h3>未闭环-超时积压处理人 TOP20<span class="hint-drill">（点击单量可按货架合并查看该处理人的全部问题）</span></h3>
       <div class="filters">
         <div><label>关键词（姓名/货架编码/ID/工单编号）</label><input id="thName" placeholder="姓名 / 货架编码 / 货架ID / 工单编号"></div>
@@ -554,6 +565,12 @@ function classify(row){
 let DATA = [];
 let handlerOT = {};   // 处理人 -> 全量已超时单量（用于明细排序）
 const MOBILE = window.matchMedia('(max-width:768px)').matches;   // 处理人 -> 全量已超时单量（用于明细排序）
+if(MOBILE){   // 手机端文案：未闭环 → 未完结（仅手机端生效）
+  const navV2b = document.querySelector('nav button[data-v="v2"] b');
+  if(navV2b) navV2b.textContent = '工单明细（未完结）';
+  const thH3 = document.querySelector('#v1 .th-panel h3');
+  if(thH3) thH3.innerHTML = thH3.innerHTML.replace('未闭环-超时积压处理人', '未完结-超时积压处理人');
+}
 
 // ============ 文件解析 ============
 document.getElementById('fileInput').addEventListener('change', e=>{
