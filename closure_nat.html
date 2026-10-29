@@ -692,25 +692,54 @@ function openDrill(anchor, mon, rgk, kind){
     renderDrill();
   });
 }
+// 同一处理人合并显示：按处理人分组，组间按组内最新创建时间倒序，组内按创建时间倒序
+function groupArrByHandler(rows, hi, ti){
+  var gm = {}, order = [];
+  rows.forEach(function(r){
+    var h = String(r[hi] == null ? '' : r[hi]);
+    if(!gm[h]){ gm[h] = []; order.push(h); }
+    gm[h].push(r);
+  });
+  var glist = order.map(function(h){
+    var arr = gm[h];
+    arr.sort(function(a, b){ return String(b[ti]).localeCompare(String(a[ti])); });
+    return arr;
+  });
+  glist.sort(function(a, b){ return String(b[0][ti]).localeCompare(String(a[0][ti])); });
+  var flat = [];
+  glist.forEach(function(arr){ arr.forEach(function(r){ flat.push(r); }); });
+  return flat;
+}
 function renderDrill(){
   var st = DR_STATE; if(!st) return;
   var p = pByKey(st.mon);
   var nm = (st.rgk==='ALL') ? '全部大区' : st.rgk;
   var what = (st.kind==='drot') ? '已超时工单' : '未完结工单';
+  var flat = groupArrByHandler(st.rows, 0, 4);   // 当前处理人合并 → 创建时间倒序
   $('detTitle').textContent = '作用域=地区介入·整体 · ' + nm + ' · ' + p.label + ' · ' + what
-    + '明细（' + st.rows.length + '单，每区域最多300条）';
+    + '明细（' + st.rows.length + '单，同一处理人已合并，每区域最多300条）';
   var html = '<thead><tr>';
   DR_COLS.forEach(function(c, i){ html += '<th' + (i===9 ? ' class="lft"' : '') + '>' + c + '</th>'; });
   html += '</tr></thead><tbody>';
-  if(!st.rows.length) html += '<tr><td colspan="14" class="rep-empty">无明细数据</td></tr>';
-  st.rows.slice(0, st.shown).forEach(function(r){
+  if(!flat.length) html += '<tr><td colspan="14" class="rep-empty">无明细数据</td></tr>';
+  var disp = flat.slice(0, st.shown);
+  disp.forEach(function(r, idx){
     html += '<tr>';
-    for(var i=0;i<14;i++) html += '<td' + (i===9 ? ' class="lft"' : '') + '>' + esc(r[i]) + '</td>';
+    for(var i=0;i<14;i++){
+      if(i===0){
+        if(idx>0 && String(disp[idx-1][0])===String(r[0])) continue;   // 并入上一行
+        var span = 1;
+        for(var j=idx+1; j<disp.length && String(disp[j][0])===String(r[0]); j++) span++;
+        html += '<td rowspan="'+span+'" style="vertical-align:top;font-weight:700;background:#faf8f4">'+esc(r[0])+'</td>';
+        continue;
+      }
+      html += '<td' + (i===9 ? ' class="lft"' : '') + '>' + esc(r[i]) + '</td>';
+    }
     html += '</tr>';
   });
-  if(st.rows.length > st.shown){
+  if(flat.length > st.shown){
     html += '<tr><td colspan="14" style="text-align:center"><button class="btn-exp" id="drMore" style="margin:6px auto">'
-      + '加载更多（还有 ' + (st.rows.length - st.shown) + ' 条）</button></td></tr>';
+      + '加载更多（还有 ' + (flat.length - st.shown) + ' 条）</button></td></tr>';
   }
   $('detTbl').innerHTML = html + '</tbody>';
   var mb = $('drMore');
@@ -744,12 +773,26 @@ function fillDetail(mon, rgk, lab, it, sc){
     return true;
   });
   var p = pByKey(mon);
-  $('detTitle').textContent = p.label+' · '+(rgk==='ALL'?'全部大区':rgk)+' · '+(lab==='ALL'?'十大客诉总量':lab)+' · 工单明细（'+rows.length+'单，最多展示300条）';
+  var flat2 = groupArrByHandler(rows, 9, 1);   // 处理人合并 → 创建时间倒序
+  $('detTitle').textContent = p.label+' · '+(rgk==='ALL'?'全部大区':rgk)+' · '+(lab==='ALL'?'十大客诉总量':lab)+' · 工单明细（'+rows.length+'单，同一处理人已合并，最多展示300条）';
   var html = '<thead><tr>';
   ['编号','创建','大区','地区','标签','三级分类','商品问题','状态','完结','处理人','等级','新装/留存','内容'].forEach(function(c){ html += '<th>'+c+'</th>'; });
   html += '</tr></thead><tbody>';
-  rows.slice(0,300).forEach(function(r){
-    html += '<tr><td>'+esc(r[0])+'</td><td>'+esc(r[1])+'</td><td>'+esc(r[2])+'</td><td>'+esc(r[3])+'</td><td>'+esc(r[4])+'</td><td>'+esc(r[5])+'</td><td>'+esc(r[6])+'</td><td>'+esc(r[7])+'</td><td>'+esc(r[8])+'</td><td>'+esc(r[9])+'</td><td>'+esc(r[11])+'</td><td>'+esc(r[12])+'</td><td>'+esc(r[10])+'</td></tr>';
+  var COLMAP = [0,1,2,3,4,5,6,7,8,9,11,12,10];   // 处理人在第10列
+  var disp2 = flat2.slice(0,300);
+  disp2.forEach(function(r, idx){
+    html += '<tr>';
+    COLMAP.forEach(function(src, ci){
+      if(ci===9){
+        if(idx>0 && String(disp2[idx-1][9])===String(r[9])) return;   // 并入上一行
+        var span = 1;
+        for(var j=idx+1; j<disp2.length && String(disp2[j][9])===String(r[9]); j++) span++;
+        html += '<td rowspan="'+span+'" style="vertical-align:top;font-weight:700;background:#faf8f4">'+esc(r[9])+'</td>';
+        return;
+      }
+      html += '<td>'+esc(r[src])+'</td>';
+    });
+    html += '</tr>';
   });
   $('detTbl').innerHTML = html + '</tbody>';
   if (detAnchor) openModalNear(detAnchor);

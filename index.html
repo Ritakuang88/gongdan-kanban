@@ -109,8 +109,8 @@
   .scroll::-webkit-scrollbar-track{background:#eef1f7}
   td.top1{color:#8e3b2f;font-weight:700}
   #detailTable th:first-child{position:sticky;left:0;z-index:5}
-  #detailTable td:first-child{position:sticky;left:0;background:#fff;z-index:2}
-  #detailTable tr:nth-child(even) td:first-child{background:#eef1f8}
+  #detailTable td.hcell{position:sticky;left:0;background:#fff;z-index:2}
+  #detailTable tr:nth-child(even) td.hcell{background:#eef1f8}
   .rank-badge{display:inline-block;min-width:28px;padding:2px 9px;border-radius:10px;color:#fff;font-weight:700}
   .rb1{background:#e57373}
   .rb2{background:#f0a63c}
@@ -729,9 +729,14 @@ function renderGroupedModalRows(rows){
     if(!groups.has(key)) groups.set(key, []);
     groups.get(key).push(r);
   });
+  const t = r => r['创建时间'] ? +r['创建时间'] : 0;
+  const sortedGroups = [...groups.values()].map(arr=>{   // 组内创建时间倒序，组间按最新单倒序
+    arr.sort((a,b)=>t(b)-t(a));
+    return arr;
+  }).sort((a,b)=>t(b[0])-t(a[0]));
   const tag = s => s==='已超时'?'ot':(s==='未超时'?'ok':'soon');
   let html = '<div class="grouped-drill">';
-  groups.forEach(items=>{
+  sortedGroups.forEach(items=>{
     const first = items[0];
     const shelfCode = first['货架编码'] || '（无货架编码）';
     const shelfId = first['货架ID'] || '—';
@@ -748,7 +753,21 @@ function renderGroupedModalRows(rows){
   if(!rows.length) html += '<div class="grouped-empty">当前筛选条件下没有问题</div>';
   html += '</div>';
   document.getElementById('modalBody').innerHTML = html;
-  document.getElementById('modalFoot').textContent = `共 ${rows.length} 单（${groups.size} 个货架，筛选后）／ 下钻共 ${modalRows.length} 单 ｜ 同一处理人、同一货架的问题已合并展示`;
+  document.getElementById('modalFoot').textContent = `共 ${rows.length} 单（${sortedGroups.length} 个货架，筛选后）／ 下钻共 ${modalRows.length} 单 ｜ 同一处理人、同一货架的问题已合并，按创建时间新→旧`;
+}
+// 同一处理人合并显示：按处理人分组，组间按组内最新创建时间倒序，组内按创建时间倒序
+function groupRowsByHandler(rows){
+  const t = r => r['创建时间'] ? +r['创建时间'] : 0;
+  const m = new Map();
+  rows.forEach(r=>{
+    const h = String(r['处理人']??'');
+    if(!m.has(h)) m.set(h, []);
+    m.get(h).push(r);
+  });
+  return [...m.values()].map(arr=>{
+    arr.sort((a,b)=>t(b)-t(a));
+    return arr;
+  }).sort((a,b)=>t(b[0])-t(a[0]));
 }
 function renderModalRows(){
   const kw = {};
@@ -757,26 +776,32 @@ function renderModalRows(){
   document.querySelectorAll('#modalFilters select').forEach(s=>{ const v = selVals(s); if(v.length) sel[s.dataset.k]=v; });
   let rows = modalRows.filter(r=>Object.entries(kw).every(([k,v])=>k.split('|').some(f=>String(r[f]??'').includes(v))));
   rows = rows.filter(r=>Object.entries(sel).every(([k,v])=>v.includes(String(r[k]??''))));
-  rows = [...rows].sort(cmpOrder);   // 与明细表同一排序规则
   if(modalGroupByShelf){ renderGroupedModalRows(rows); return; }
+  const groups = groupRowsByHandler(rows);   // 同一处理人合并 → 创建时间倒序
   const tag = s => s==='已超时'?'ot':(s==='未超时'?'ok':'soon');
   let html = `<table><thead><tr>${DRILL_COLS.map(c=>`<th>${c==='超时状态'?'是否已超时':c}</th>`).join('')}</tr></thead><tbody>`;
-  rows.forEach(r=>{
-    html += '<tr>' + DRILL_COLS.map(c=>{
-      let v = r[c];
-      if(c==='创建时间') v = fmtDT(v);
-      if(c==='客户等级'){
-        const cls = v==='S级'?'s':v==='A级'?'a':v==='B级'?'b':'y';
-        return `<td class="num"><span class="lvl ${cls}">${v??''}</span></td>`;
-      }
-      if(c==='超时状态') return `<td><span class="tag ${tag(v)}">${v}</span></td>`;
-      if(c==='超时天数') return `<td class="num ${v>0?'hot':''}">${v??''}</td>`;
-      if(c==='工单内容') return `<td style="white-space:normal;min-width:280px">${maskTel(v)}</td>`;
-      return `<td>${v??''}</td>`;
-    }).join('') + '</tr>';
+  groups.forEach(arr=>{
+    arr.forEach((r, gi)=>{
+      html += '<tr>' + DRILL_COLS.map(c=>{
+        if(c==='处理人'){
+          if(gi) return '';
+          return `<td rowspan="${arr.length}" style="vertical-align:top;font-weight:700;background:#faf8f4">${escText(r['处理人']??'')}</td>`;
+        }
+        let v = r[c];
+        if(c==='创建时间') v = fmtDT(v);
+        if(c==='客户等级'){
+          const cls = v==='S级'?'s':v==='A级'?'a':v==='B级'?'b':'y';
+          return `<td class="num"><span class="lvl ${cls}">${v??''}</span></td>`;
+        }
+        if(c==='超时状态') return `<td><span class="tag ${tag(v)}">${v}</span></td>`;
+        if(c==='超时天数') return `<td class="num ${v>0?'hot':''}">${v??''}</td>`;
+        if(c==='工单内容') return `<td style="white-space:normal;min-width:280px">${maskTel(v)}</td>`;
+        return `<td>${v??''}</td>`;
+      }).join('') + '</tr>';
+    });
   });
   document.getElementById('modalBody').innerHTML = html + '</tbody></table>';
-  document.getElementById('modalFoot').textContent = `共 ${rows.length} 条（筛选后）／ 下钻共 ${modalRows.length} 条 ｜ 拖动表头列分隔线可调整列宽`;
+  document.getElementById('modalFoot').textContent = `共 ${rows.length} 条（筛选后）／ 下钻共 ${modalRows.length} 条 ｜ 同一处理人已合并，按创建时间新→旧 ｜ 拖动表头列分隔线可调整列宽`;
   makeResizable(document.querySelector('#modalBody table'));
 }
 document.querySelectorAll('#modalFilters input').forEach(el=>el.addEventListener('input', renderModalRows));
@@ -1234,24 +1259,30 @@ function detailRows(){
 function renderDetailTable(){
   const rows = detailRows();
   updateHeadOT(document.querySelector('#detailFilters select[data-k="大区"]').value);   // 右上角总超时工单与本页大区筛选联动
+  const groups = groupRowsByHandler(rows);   // 同一处理人合并 → 创建时间倒序
   const tag = s => s==='已超时'?'ot':(s==='未超时'?'ok':'soon');
   const cols = DETAIL_COLS;
   let html = `<table><colgroup>${DETAIL_COL_W.map(w=>`<col style="width:${w}px">`).join('')}</colgroup><thead><tr>${cols.map(c=>`<th>${c==='超时状态'?'是否已超时':c}</th>`).join('')}</tr></thead><tbody>`;
-  rows.forEach(r=>{
-    html += '<tr>' + cols.map(c=>{
-      let v = r[c];
-      if(c==='处理人') return `<td class="hl-name">${v??''}</td>`;
-      if(c==='客户等级'){
-        const cls = v==='S级'?'s':v==='A级'?'a':v==='B级'?'b':'y';
-        return `<td class="num"><span class="lvl ${cls}">${v??''}</span></td>`;
-      }
-      if(c==='催单次数'){ const n=Number(v)||0; return `<td class="num">${n>2?`<span class="lvl s">${v}</span>`:(v??'')}</td>`; }
-      if(c==='创建时间') v = fmtDT(v);
-      if(c==='超时状态') return `<td><span class="tag ${tag(v)}">${v}</span></td>`;
-      if(c==='超时天数') return `<td class="num ${v>0?'hot':''}">${v??''}</td>`;
-      if(c==='工单内容') return `<td style="white-space:normal">${maskTel(v)}</td>`;
-      return `<td>${v??''}</td>`;
-    }).join('') + '</tr>';
+  groups.forEach(arr=>{
+    arr.forEach((r, gi)=>{
+      html += '<tr>' + cols.map(c=>{
+        if(c==='处理人'){
+          if(gi) return '';
+          return `<td rowspan="${arr.length}" class="hl-name hcell" style="vertical-align:top">${escText(r['处理人']??'')}</td>`;
+        }
+        let v = r[c];
+        if(c==='客户等级'){
+          const cls = v==='S级'?'s':v==='A级'?'a':v==='B级'?'b':'y';
+          return `<td class="num"><span class="lvl ${cls}">${v??''}</span></td>`;
+        }
+        if(c==='催单次数'){ const n=Number(v)||0; return `<td class="num">${n>2?`<span class="lvl s">${v}</span>`:(v??'')}</td>`; }
+        if(c==='创建时间') v = fmtDT(v);
+        if(c==='超时状态') return `<td><span class="tag ${tag(v)}">${v}</span></td>`;
+        if(c==='超时天数') return `<td class="num ${v>0?'hot':''}">${v??''}</td>`;
+        if(c==='工单内容') return `<td style="white-space:normal">${maskTel(v)}</td>`;
+        return `<td>${v??''}</td>`;
+      }).join('') + '</tr>';
+    });
   });
   document.getElementById('detailTable').innerHTML = html + '</tbody></table>';
   if(MOBILE){
@@ -1264,7 +1295,7 @@ function renderDetailTable(){
     }
   }
   makeResizable(document.querySelector('#detailTable table'));
-  document.getElementById('detailCount').textContent = `共 ${rows.length} 条（筛选后）／ 全部 ${DATA.length} 条 ｜ 排序：已超时优先 → 创建时间新→旧 → 客户等级S→A → 新装优先 ｜ 拖动表头列分隔线可调整列宽`;
+  document.getElementById('detailCount').textContent = `共 ${rows.length} 条（筛选后）／ 全部 ${DATA.length} 条 ｜ 排序：同一处理人合并 → 创建时间新→旧 ｜ 拖动表头列分隔线可调整列宽`;
 }
 document.querySelectorAll('#detailFilters select, #detailFilters input').forEach(el=>{
   el.addEventListener(el.tagName==='SELECT'?'change':'input', renderDetailTable);
