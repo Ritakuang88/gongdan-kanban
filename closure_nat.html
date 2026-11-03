@@ -16,15 +16,15 @@
   .btn-exp { margin-left: auto; padding: 4px 14px; font-size: 12px; border: 1px solid var(--dark); color: var(--dark); background: #fff; border-radius: 6px; cursor: pointer; }
   .btn-exp:hover { background: var(--dark); color: #fff; }
   .btn-exp:disabled { opacity: .5; cursor: wait; }
-  /* 导出月份多选（2026-11-03） */
-  .exp-mon { position: relative; display: inline-block; }
-  .exp-mon-btn { padding: 4px 10px; font-size: 12px; border: 1px solid #c8d0c8; color: var(--muted); background: #fff; border-radius: 6px; cursor: pointer; white-space: nowrap; }
+  /* 月份多选控件（2026-11-04）：尺寸样式与旁边 fbar 下拉框一致 */
+  .exp-mon { position: relative; display: inline-flex; align-items: center; gap: 6px; }
+  .exp-mon-btn { font-size: 13px; padding: 5px 8px; border: 1px solid #d8ddd8; border-radius: 6px; background: #fff; color: var(--ink); cursor: pointer; white-space: nowrap; }
   .exp-mon-btn:hover { border-color: var(--dark); color: var(--dark); }
   .exp-mon-pop { display: none; position: absolute; right: 0; top: calc(100% + 4px); z-index: 60; background: #fff; border: 1px solid #d8e0d8; border-radius: 8px; box-shadow: 0 6px 18px rgba(0,0,0,.14); padding: 8px 10px; min-width: 130px; }
   .exp-mon.open .exp-mon-pop { display: block; }
-  .exp-mon-pop label { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--dark); padding: 3px 2px; cursor: pointer; white-space: nowrap; }
+  .exp-mon-pop label { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--dark); padding: 3px 2px; cursor: pointer; white-space: nowrap; }
   .exp-mon-pop .exp-mon-all { border-bottom: 1px solid #eef2ee; margin-bottom: 4px; padding-bottom: 5px; font-weight: 700; }
-  .monx-cap { font-size: 12px; color: var(--muted); margin-right: -2px; }
+  .monx-cap { font-size: 12px; color: var(--muted); }
   header { display: flex; align-items: flex-start; }
   header .hd-l { flex: 1; min-width: 0; }
   header .hd-r { margin-left: auto; padding-top: 2px; }
