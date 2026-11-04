@@ -94,6 +94,14 @@
   th{background:#1c2b6d;color:#fff;padding:9px 10px;border:1px solid #31418a;position:sticky;top:0;text-align:left;font-weight:600}
   .rsz{position:absolute;right:0;top:0;bottom:0;width:7px;cursor:col-resize;background:rgba(255,255,255,.15)}
   .rsz:hover{background:rgba(255,255,255,.45)}
+  /* TOP20：冻结处理人列；58px 仅容纳3个中文字符姓名，不占横向空间 */
+  #topHandlers table{table-layout:fixed;width:100%;min-width:1080px}
+  #topHandlers col.c-handler{width:58px}
+  #topHandlers col.c-region{width:82px}
+  #topHandlers th:first-child,#topHandlers td:first-child{position:sticky;left:0;z-index:4;background:#fff;background-clip:padding-box;overflow:hidden;text-overflow:ellipsis;padding-left:4px;padding-right:4px}
+  #topHandlers th:first-child{z-index:9;background:#1c2b6d}
+  #topHandlers tbody tr:nth-child(even) td:first-child{background:#eef1f8}
+  #topHandlers .badge-name{padding:3px 5px;min-width:0}
   /* 明细表：固定布局+colgroup默认列宽（处理人≈4个中文字宽），拖动调宽不卡顿 */
   #detailTable table{table-layout:fixed}
   #detailTable td{overflow:hidden;text-overflow:ellipsis}
@@ -1231,7 +1239,7 @@ function renderTopHandlers(){
   const totalOf = n => (hpAll[n]||0)+(soonM[n]||0)+(okM[n]||0);
   const totalTop3 = new Set([...hpList].sort((a,b)=>totalOf(b[0])-totalOf(a[0])).slice(0,3).map(([n])=>n));
   const cuiTop3 = new Set([...hpList].sort((a,b)=>(cuiM[b[0]]||0)-(cuiM[a[0]]||0)).slice(0,3).filter(([n])=>(cuiM[n]||0)>0).map(([n])=>n));
-  let h2h = `<table><thead><tr><th>处理人</th><th>大区</th><th class="num">已超时</th><th class="num">新装已超时</th><th class="num">SA级已超时</th><th class="num">🚨威胁撤架/丢柜</th><th class="num">催单</th><th class="num">即将超时</th><th class="num">未超时</th><th class="num">未处理总计</th><th>主要问题类型</th><th class="num">占${rg?'该大区':'全部'}超时比例</th></tr></thead><tbody>`;
+  let h2h = `<table><colgroup><col class="c-handler"><col class="c-region"></colgroup><thead><tr><th>处理人</th><th>大区</th><th class="num">已超时</th><th class="num">新装已超时</th><th class="num">SA级已超时</th><th class="num">🚨威胁撤架/丢柜</th><th class="num">催单</th><th class="num">即将超时</th><th class="num">未超时</th><th class="num">未处理总计</th><th>主要问题类型</th><th class="num">占${rg?'该大区':'全部'}超时比例</th></tr></thead><tbody>`;
   hpList.forEach(([n,v],idx)=>{
     const rgn = (scopeAll.find(r=>r['处理人']===n)||{})['大区'] || '';
     const num = v===0 ? `<span class="drill" data-h="${n}" data-t="ot">0</span>` : (idx<5 ? `<span class="drill badge-lr" data-h="${n}" data-t="ot">${v}</span>` : `<span class="drill ${v>=20?'hot':''}" data-h="${n}" data-t="ot">${v}</span>`);
