@@ -16,6 +16,15 @@
   .btn-exp { margin-left: auto; padding: 4px 14px; font-size: 12px; border: 1px solid var(--dark); color: var(--dark); background: #fff; border-radius: 6px; cursor: pointer; }
   .btn-exp:hover { background: var(--dark); color: #fff; }
   .btn-exp:disabled { opacity: .5; cursor: wait; }
+  /* 月份多选控件（2026-11-04）：尺寸样式与旁边 fbar 下拉框一致 */
+  .exp-mon { position: relative; display: inline-flex; align-items: center; gap: 6px; }
+  .exp-mon-btn { font-size: 13px; padding: 5px 8px; border: 1px solid #d8ddd8; border-radius: 6px; background: #fff; color: var(--ink); cursor: pointer; white-space: nowrap; }
+  .exp-mon-btn:hover { border-color: var(--dark); color: var(--dark); }
+  .exp-mon-pop { display: none; position: absolute; right: 0; top: calc(100% + 4px); z-index: 60; background: #fff; border: 1px solid #d8e0d8; border-radius: 8px; box-shadow: 0 6px 18px rgba(0,0,0,.14); padding: 8px 10px; min-width: 130px; }
+  .exp-mon.open .exp-mon-pop { display: block; }
+  .exp-mon-pop label { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--dark); padding: 3px 2px; cursor: pointer; white-space: nowrap; }
+  .exp-mon-pop .exp-mon-all { border-bottom: 1px solid #eef2ee; margin-bottom: 4px; padding-bottom: 5px; font-weight: 700; }
+  .monx-cap { font-size: 12px; color: var(--muted); }
   header { display: flex; align-items: flex-start; }
   header .hd-l { flex: 1; min-width: 0; }
   header .hd-r { margin-left: auto; padding-top: 2px; }
@@ -108,10 +117,9 @@
 <div class="wrap">
   <header>
     <div class="hd-l">
-      <h1>⏱️ 地区工单遵时闭环率</h1>
+      <h1>⏱️ 地区工单遵时闭环率<span id="staleTip" style="display:none;margin-left:14px;font-size:15px;font-weight:700;color:#000">（数据更新中请稍等）</span></h1>
       <div class="meta" id="metaLine"></div>
     </div>
-    <div class="hd-r"><button class="btn-upd" onclick="openUpd()">⟳ 更新数据</button></div>
   </header>
 
   <div class="fbar">
@@ -156,11 +164,16 @@
     <h2>📋 数据表1 · 地区介入·整体 工单完结率</h2>
     <div class="hnote">点击大区行展开地区。默认视图（是否地区介入＝介入、作用域＝整体、新装/留存＝全部）下，点击「未完结量」「已超时量」数字可下钻查看工单明细。</div>
     <div class="fbar" style="box-shadow:none;background:#f7f9f7;padding:10px 12px">
-      <label>月份 <select id="t1Mon"></select></label>
+      <div class="exp-mon" id="t1MonWrap">
+        <span class="monx-cap">月份</span>
+        <button type="button" class="exp-mon-btn" id="t1MonBtn">… ▾</button>
+        <div class="exp-mon-pop" id="t1MonPop"></div>
+      </div>
       <label>是否地区介入 <select id="t1Itv"><option value="yes">介入</option><option value="no">非介入</option><option value="all">全部</option></select></label>
       <label>作用域 <select id="t1Scope"><option value="ov">整体</option><option value="sa">S/A级客户</option><option value="xz">新装</option></select></label>
       <label>新装/留存 <select id="t1Xzlx"><option value="all">全部</option><option value="xz">新装</option><option value="lz">留存</option></select></label>
       <label>大区 <select id="t1Rg"></select></label>
+      <button class="btn-exp" id="t1TblExp" onclick="exportTable(1)" style="margin-left:auto">⬇ 导出表格</button>
       <button class="btn-exp" id="t1Exp" onclick="exportDetail(1)">⬇ 导出明细（含工单字段）</button>
     </div>
     <div class="tblx"><table id="t1Tbl" class="rg-tbl"></table></div>
@@ -171,11 +184,16 @@
     <h2>🏷️ 数据表2 · 大区 × 十大客诉标签</h2>
     <div class="hnote">点击大区行展开地区；<b>点击客诉量数字</b>可下钻查看工单明细。</div>
     <div class="fbar" style="box-shadow:none;background:#f7f9f7;padding:10px 12px">
-      <label>月份 <select id="t2Mon"></select></label>
+      <div class="exp-mon" id="t2MonWrap">
+        <span class="monx-cap">月份</span>
+        <button type="button" class="exp-mon-btn" id="t2MonBtn">… ▾</button>
+        <div class="exp-mon-pop" id="t2MonPop"></div>
+      </div>
       <label>大区 <select id="t2Rg"></select></label>
       <label>十大客诉分类 <select id="t2Lab"></select></label>
       <label>是否地区介入 <select id="t2Itv"><option value="yes">介入</option><option value="no">非介入</option><option value="all" selected>全部</option></select></label>
       <label>作用域 <select id="t2Scope"><option value="ov">整体</option><option value="sa">S/A级客户</option><option value="xz">新装</option></select></label>
+      <button class="btn-exp" id="t2TblExp" onclick="exportTable(2)" style="margin-left:auto">⬇ 导出表格</button>
       <button class="btn-exp" id="t2Exp" onclick="exportDetail(2)">⬇ 导出明细（含工单字段）</button>
     </div>
     <div class="tblx"><table id="t2Tbl" class="rg-tbl"></table></div>
@@ -222,6 +240,16 @@ if(!E){ document.getElementById('metaLine').textContent = '数据加载失败'; 
 var $ = function(id){ return document.getElementById(id); };
 var PERIODS = E.periods, LABELS9 = E.labels9, REGIONS = E.regions;
 var DEF_MON = PERIODS[PERIODS.length-1].key;   // 默认最新月份
+var MON_LAST = {};   // 各表「最近勾选的展示月份」
+// 数据未更新提示（2026-11-04）：数据截止日早于北京时间昨天时，标题旁显示黑字提示
+(function(){
+  try{
+    var cn = new Date(Date.now() + (new Date().getTimezoneOffset() + 480) * 60000); // 北京时间
+    var yest = new Date(cn.getFullYear(), cn.getMonth(), cn.getDate() - 1);
+    var asofD = new Date(E.asof + 'T00:00:00');
+    if (asofD < yest) $('staleTip').style.display = 'inline';
+  }catch(err){}
+})();
 
 function pByKey(k){ for(var i=0;i<PERIODS.length;i++) if(PERIODS[i].key===k) return PERIODS[i]; return PERIODS[0]; }
 function pct(a,b){ if(!b) return '—'; return Math.round(a/b*100)+'%'; }
@@ -365,11 +393,11 @@ function regionRows(rgFilter){
 }
 
 // ---------- 数据表1 ----------
-optFill($('t1Mon'), MON_OPTS, DEF_MON);
+buildMonX(1);
 optFill($('t1Rg'), RG_OPTS, 'ALL');
 function itvName(it){ return it==='yes'?'需地区介入量':(it==='no'?'非介入工单量':'升级工单量'); }
 function renderT1(){
-  var mon=$('t1Mon').value, it=$('t1Itv').value, sc=$('t1Scope').value, xl=$('t1Xzlx').value, rgF=$('t1Rg').value;
+  var mon=curMon(1), it=$('t1Itv').value, sc=$('t1Scope').value, xl=$('t1Xzlx').value, rgF=$('t1Rg').value;
   var p = pByKey(mon), blk = ((((E.t1[mon]||{})[sc]||{})[xl]||{})[it])||{};
   var vn = itvName(it);
   var html = '<thead><tr><th class="lft" rowspan="2">大区／地区</th>'
@@ -423,7 +451,7 @@ function renderT1(){
     });
   });
 }
-['t1Mon','t1Itv','t1Scope','t1Xzlx','t1Rg'].forEach(function(id){ $(id).addEventListener('change', renderT1); });
+['t1Itv','t1Scope','t1Xzlx','t1Rg'].forEach(function(id){ $(id).addEventListener('change', renderT1); });
 
 function bindExpand(tblId){
   var tbl = $(tblId);
@@ -437,11 +465,11 @@ function bindExpand(tblId){
 }
 
 // ---------- 数据表2 ----------
-optFill($('t2Mon'), MON_OPTS, DEF_MON);
+buildMonX(2);
 optFill($('t2Rg'), RG_OPTS, 'ALL');
 optFill($('t2Lab'), [['ALL','全部（10类）']].concat(LABELS9.map(function(l){ return [l,l]; })), 'ALL');
 function renderT2(){
-  var mon=$('t2Mon').value, rgF=$('t2Rg').value, labF=$('t2Lab').value, it=$('t2Itv').value, sc=$('t2Scope').value;
+  var mon=curMon(2), rgF=$('t2Rg').value, labF=$('t2Lab').value, it=$('t2Itv').value, sc=$('t2Scope').value;
   var p = pByKey(mon), blk = ((E.t2[mon]||{})[sc]||{})[it]||{};
   var labs = labF==='ALL' ? LABELS9 : [labF];
   var groups = ['__TOT__'].concat(labs);
@@ -499,23 +527,76 @@ function renderT2(){
     });
   });
 }
-['t2Mon','t2Rg','t2Lab','t2Itv','t2Scope'].forEach(function(id){ $(id).addEventListener('change', renderT2); });
+['t2Rg','t2Lab','t2Itv','t2Scope'].forEach(function(id){ $(id).addEventListener('change', renderT2); });
 
 // ---------- 下钻明细 ----------
 var DET_CACHE = {};
 // ---- 导出明细（表1源=升级明细 zs_exp1_；表2源=十大客诉明细 zs_exp2_；均按月懒加载） ----
 // exp1行: [fin,sla,ot,duty,编号,创建,完结,大区,地区,l3,itv,地区处理人,当前处理人,内容,sa,xz]
 // exp2行: [fin,sla,ot,编号,创建,完结,大区,地区,l3,itv,地区处理人,内容,sa,xz,lab9]
-function loadExp(which, mon, cb){
+// Promise 版：同月并发去重，多月并行加载，导出更快（2026-11-03）
+var EXP_LOADING = {};
+function loadExpP(which, mon){
   var key = '__ZS_EXP'+which+'__';
   window[key] = window[key] || {};
-  if (window[key][mon]) { cb(window[key][mon]); return; }
-  var s = document.createElement('script');
-  s.src = 'zs_exp'+which+'_'+mon+'.js';
-  s.onload = function(){ cb(window[key][mon] || []); };
-  s.onerror = function(){ alert('导出数据加载失败：'+s.src); cb(null); };
-  document.head.appendChild(s);
+  if (window[key][mon]) return Promise.resolve(window[key][mon]);
+  var lk = which + '|' + mon;
+  if (EXP_LOADING[lk]) return EXP_LOADING[lk];
+  EXP_LOADING[lk] = new Promise(function(resolve){
+    var s = document.createElement('script');
+    s.src = 'zs_exp'+which+'_'+mon+'.js';
+    s.onload = function(){ resolve(window[key][mon] || []); };
+    s.onerror = function(){ alert('导出数据加载失败：'+s.src); resolve(null); };
+    document.head.appendChild(s);
+  });
+  return EXP_LOADING[lk];
 }
+// 月份多选控件（2026-11-04）：月份本身即多月选择；表格展示最近勾选的月份，导出包含全部勾选月份
+function buildMonX(which){
+  var wrap = $(which===1 ? 't1MonWrap' : 't2MonWrap');
+  var btn  = $(which===1 ? 't1MonBtn' : 't2MonBtn');
+  var pop  = $(which===1 ? 't1MonPop' : 't2MonPop');
+  pop.innerHTML = '<label class="exp-mon-all"><input type="checkbox" class="em-all">全选</label>'
+    + MON_OPTS.map(function(it){ return '<label><input type="checkbox" class="em-item" value="'+it[0]+'">'+esc(it[1])+'</label>'; }).join('');
+  function syncBtn(){
+    var chk = [...pop.querySelectorAll('.em-item:checked')];
+    if (!chk.length) btn.textContent = '未选 ▾';
+    else if (chk.length === 1) btn.textContent = pByKey(chk[0].value).label + ' ▾';
+    else btn.textContent = chk.length + '个月 ▾';
+  }
+  btn.addEventListener('click', function(ev){ ev.stopPropagation(); document.querySelectorAll('.exp-mon.open').forEach(function(w){ if(w!==wrap) w.classList.remove('open'); }); wrap.classList.toggle('open'); });
+  pop.addEventListener('click', function(ev){ ev.stopPropagation(); });
+  pop.querySelector('.em-all').addEventListener('change', function(ev){
+    pop.querySelectorAll('.em-item').forEach(function(c){ c.checked = ev.target.checked; });
+    var chk = [...pop.querySelectorAll('.em-item:checked')];
+    MON_LAST[which] = chk.length ? chk[chk.length-1].value : DEF_MON;
+    syncBtn(); (which===1?renderT1:renderT2)();
+  });
+  pop.querySelectorAll('.em-item').forEach(function(c){ c.addEventListener('change', function(){
+    if (c.checked) MON_LAST[which] = c.value;
+    else if (MON_LAST[which] === c.value) { var chk = [...pop.querySelectorAll('.em-item:checked')]; MON_LAST[which] = chk.length ? chk[chk.length-1].value : DEF_MON; }
+    syncBtn(); (which===1?renderT1:renderT2)();
+  }); });
+  document.addEventListener('click', function(){ wrap.classList.remove('open'); });
+  var d = MON_OPTS[MON_OPTS.length-1][0];
+  pop.querySelector('.em-item[value="'+d+'"]').checked = true;
+  MON_LAST[which] = d;
+  syncBtn();
+}
+function curMon(which){
+  var pop = $(which===1 ? 't1MonPop' : 't2MonPop');
+  if (pop.querySelector('.em-item[value="'+(MON_LAST[which]||'')+'"]:checked')) return MON_LAST[which];
+  var chk = pop.querySelector('.em-item:checked');
+  return chk ? chk.value : DEF_MON;
+}
+function getExpMons(which){
+  var pop = $(which===1 ? 't1MonPop' : 't2MonPop');
+  var mons = MON_OPTS.map(function(it){ return it[0]; })
+    .filter(function(k){ return pop.querySelector('.em-item[value="'+k+'"]:checked'); });
+  if (!mons.length) mons = [curMon(which)];
+  return mons;
+}
+function monShort(k){ return parseInt(k.split('-')[1], 10) + '月'; }
 function ensureXLSX(cb){
   if (typeof XLSX !== 'undefined') { cb(); return; }
   // 优先本地 vendor（2026-10-20：CDN 在部分网络下极慢，已本地化），失败回退 CDN
@@ -604,6 +685,7 @@ function exportDetailRun(which, mons){
     if (!byMon) return;
     var H1 = ['闭环目标','是否超时','工单延迟判定责任方','工单编号','创建时间','完结时间','大区','地区','三级分类名称','是否地区介入','地区处理人','工单内容'];
     var H2 = ['闭环目标','是否超时','工单编号','创建时间','统计截止日期','大区','地区','三级分类名称','当前处理人','工单内容'];
+    if (multi){ H1 = ['月份'].concat(H1); H2 = ['月份'].concat(H2); }   // 多月导出加「月份」列
     var aoa1 = [H1], aoa2 = [H2];
     mons.forEach(function(mon){
       var rows = byMon[mon] || [];
@@ -649,6 +731,7 @@ function exportDetailRun(which, mons){
   });
 }
 window.exportDetail = exportDetail;
+window.exportTable = exportTable;
 
 // ---------- 官方表导出（2026-10-20 用户要求） ----------
 function exportHist(){
