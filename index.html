@@ -1229,8 +1229,8 @@ function renderTopHandlers(){
   const topL3 = n => { const m = l3M[n]; if(!m) return '-'; const e = Object.entries(m).sort((a,b)=>b[1]-a[1])[0]; return `${e[0]}(${e[1]})`; };
   const hpList = Object.entries(hpAll).sort((a,b)=>b[1]-a[1]).slice(0,20);
   const totalOf = n => (hpAll[n]||0)+(soonM[n]||0)+(okM[n]||0);
-  const totalTop2 = new Set([...hpList].sort((a,b)=>totalOf(b[0])-totalOf(a[0])).slice(0,2).map(([n])=>n));
-  const cuiTop1 = new Set([...hpList].sort((a,b)=>(cuiM[b[0]]||0)-(cuiM[a[0]]||0)).slice(0,1).filter(([n])=>(cuiM[n]||0)>0).map(([n])=>n));
+  const totalTop3 = new Set([...hpList].sort((a,b)=>totalOf(b[0])-totalOf(a[0])).slice(0,3).map(([n])=>n));
+  const cuiTop3 = new Set([...hpList].sort((a,b)=>(cuiM[b[0]]||0)-(cuiM[a[0]]||0)).slice(0,3).filter(([n])=>(cuiM[n]||0)>0).map(([n])=>n));
   let h2h = `<table><thead><tr><th>处理人</th><th>大区</th><th class="num">已超时</th><th class="num">新装已超时</th><th class="num">SA级已超时</th><th class="num">🚨威胁撤架/丢柜</th><th class="num">催单</th><th class="num">即将超时</th><th class="num">未超时</th><th class="num">未处理总计</th><th>主要问题类型</th><th class="num">占${rg?'该大区':'全部'}超时比例</th></tr></thead><tbody>`;
   hpList.forEach(([n,v],idx)=>{
     const rgn = (scopeAll.find(r=>r['处理人']===n)||{})['大区'] || '';
@@ -1241,10 +1241,10 @@ function renderTopHandlers(){
     const xzCell = xz?`<span class="drill ${idx<5?'badge-lr':''}" data-h="${n}" data-t="xz">${xz}</span>`:`<span class="drill" data-h="${n}" data-t="xz">0</span>`;
     const saCell = sa?`<span class="drill ${idx<5?'badge-lr':''}" data-h="${n}" data-t="sa">${sa}</span>`:`<span class="drill" data-h="${n}" data-t="sa">0</span>`;
     const rkCell = rk?`<span class="drill badge-lr" data-h="${n}" data-t="risk" title="点击下钻威胁撤架/丢柜工单">${rk}</span>`:`<span class="drill" data-h="${n}" data-t="risk">0</span>`;
-    const cuiCell = `<span class="drill ${cuiTop1.has(n)?'badge-lr':''}" data-h="${n}" data-t="cui" title="点击下钻催单工单">${cui}</span>`;
+    const cuiCell = `<span class="drill ${cuiTop3.has(n)?'badge-lr':''}" data-h="${n}" data-t="cui" title="点击下钻催单工单">${cui}</span>`;
     const okCell = ok?`<span class="drill badge-ok" data-h="${n}" data-t="ok">${ok}</span>`:`<span class="drill" data-h="${n}" data-t="ok">0</span>`;
     const tot = v + sn + ok;
-    const totCell = `<span class="drill ${totalTop2.has(n)?'badge-lr':''}" data-h="${n}" data-t="all" style="font-weight:700">${tot}</span>`;
+    const totCell = `<span class="drill ${totalTop3.has(n)?'badge-lr':''}" data-h="${n}" data-t="all" style="font-weight:700">${tot}</span>`;
     const pctCell = `<span class="drill" data-h="${n}" data-t="ot">${baseOt.length?(v/baseOt.length*100).toFixed(1):0}%</span>`;
     h2h += `<tr><td>${name}</td><td>${rgn}</td><td class="num">${num}</td><td class="num">${xzCell}</td><td class="num">${saCell}</td><td class="num">${rkCell}</td><td class="num">${cuiCell}</td><td class="num">${snCell}</td><td class="num">${okCell}</td><td class="num">${totCell}</td><td>${topL3(n)}</td><td class="num">${pctCell}</td></tr>`;
   });
