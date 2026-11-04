@@ -689,8 +689,8 @@ function exportDetailRun(which){
     // 2026-11-03：未完结 sheet 无数据时默认不生成
     if (aoa2.length > 1) XLSX.utils.book_append_sheet(wb, s2, mlabel+'未完结'+nm);
     dlwb(wb, (which===1?'表1_':'表2_') + mlabel + nm + '_' + E.asof + '.xlsx');
-    btn.textContent = '已开始下载';
-    setTimeout(function(){ btn.disabled = false; btn.textContent = old; }, 1200);
+    btn.textContent = '下载成功';
+    setTimeout(function(){ btn.disabled = false; btn.textContent = old; }, 1500);
     }, 80);
   });
 }
