@@ -159,7 +159,7 @@
   .shelf-issue-meta{font-size:12px;color:#666;line-height:1.8;white-space:normal}
   .shelf-issue-title{font-size:13px;font-weight:700;color:var(--head);margin-bottom:4px}
   .shelf-issue-title .tag{margin-left:6px;vertical-align:1px}
-  .shelf-issue-content{white-space:normal;line-height:1.75;min-width:0;word-break:break-word;color:#33302b}
+  .shelf-issue-content{display:block;white-space:pre-wrap;line-height:1.75;min-width:0;word-break:break-word;overflow-wrap:anywhere;color:#33302b;max-height:none;overflow:visible}
   .grouped-empty{padding:28px;text-align:center;color:var(--sub)}
   .msw{position:relative;display:inline-block;min-width:120px}
   .msw-btn{padding:7px 10px;border:1px solid var(--line);border-radius:6px;background:#fff;font-size:13px;width:100%;min-width:120px;text-align:left;cursor:pointer;color:var(--ink)}
@@ -805,7 +805,7 @@ function renderModalRows(){
         }
         if(c==='超时状态') return `<td><span class="tag ${tag(v)}">${v}</span></td>`;
         if(c==='超时天数') return `<td class="num ${v>0?'hot':''}">${v??''}</td>`;
-        if(c==='工单内容') return `<td style="white-space:normal;min-width:280px">${maskTel(v)}</td>`;
+        if(c==='工单内容') return `<td style="white-space:pre-wrap;min-width:280px;overflow-wrap:anywhere;word-break:break-word">${maskTel(v)}</td>`;
         return `<td>${v??''}</td>`;
       }).join('') + '</tr>';
     });
@@ -939,7 +939,7 @@ function renderV1(){
     if(sa.length)  parts.push(`SA级已超时 <span class="drill" data-frg="${R}" data-ft="sa">${sa.length}</span> 单`);
     if(xz.length)  parts.push(`新装已超时 <span class="drill" data-frg="${R}" data-ft="xz">${xz.length}</span> 单`);
     if(cui.length) parts.push(`催单&gt;2次 <span class="drill" data-frg="${R}" data-ft="cui">${cui.length}</span> 单`);
-    if(rk.length)  parts.push(`🚨威胁撤架/丢柜 <span class="drill" data-frg="${R}" data-ft="risk">${rk.length}</span> 单`);
+    if(rk.length)  parts.push(`🚨 威胁撤架/丢柜（已超时） <span class="drill" data-frg="${R}" data-ft="risk">${rk.length}</span> 单`);
     if(parts.length) fl += `<li style="margin:7px 0"><b>${R}</b>：${parts.join(' ｜ ')}</li>`;
   });
   document.getElementById('focusList').innerHTML = fl || '<li>当前范围无重点关注工单。</li>';
@@ -949,7 +949,7 @@ function renderV1(){
     if(t==='sa'){ m = m.filter(r=>isSA(r)); ttl += ' · SA级已超时'; }
     if(t==='xz'){ m = m.filter(r=>r['新装/留存']==='新装'); ttl += ' · 新装已超时'; }
     if(t==='cui'){ m = m.filter(r=>isNum(r['催单次数'])>2); ttl += ' · 催单>2次已超时'; }
-    if(t==='risk'){ m = m.filter(isRiskRow); ttl += ' · 威胁撤架/丢柜已超时'; }
+    if(t==='risk'){ m = m.filter(isRiskRow); ttl += ' · 🚨 威胁撤架/丢柜（已超时）'; }
     showDrill(`${ttl}（${m.length} 单）`, m);
   });
 
@@ -1036,11 +1036,11 @@ function renderCmpTable(rg){
   const cell = (p,c,t,hot,risk=false) => `<td class="num">${cmpVal(p,'prev',t,risk)} → <b${hot?' style="color:#c62828"':''}>${cmpVal(c,'cur',t,risk)}</b> ${arrow(c-p)}</td>`;
   const mcell = (p,c,t,risk=false) => p==null ? `<td class="num">— → <b>${cmpVal(c,'cur',t,risk)}</b></td>` : cell(p,c,t,false,risk);
   const pcell = (v,t,risk=false) => `<td class="num">${v==null?'—':cmpVal(v,'prev',t,risk)}</td>`;
-  box.innerHTML = `<table class="cmp-tbl"><thead><tr><th>日期</th><th class="num">保留（未闭环）</th><th class="num">已超时</th><th class="num">即将超时</th><th class="num">未超时</th><th class="num">🚨 威胁撤架/丢柜</th><th class="num">催单量</th></tr></thead><tbody>
+  box.innerHTML = `<table class="cmp-tbl"><thead><tr><th>日期</th><th class="num">保留（未闭环）</th><th class="num">已超时</th><th class="num">即将超时</th><th class="num">未超时</th><th class="num">🚨 威胁撤架/丢柜（全部未闭环）</th><th class="num">催单量</th></tr></thead><tbody>
     <tr><td>昨日（${base.date}）</td>${pcell(pst.tot,'tot')}${pcell(pst.ot,'ot')}${pcell(pst.soon,'soon')}${pcell(pst.ok,'ok')}${pcell(pst.risk,'risk',true)}${pcell(pst.cui,'cui')}</tr>
     <tr><td>今日（${fmtD(TODAY)}）</td>${cell(pst.tot,cur.tot,'tot')}${cell(pst.ot,cur.ot,'ot',1)}${cell(pst.soon,cur.soon,'soon')}${cell(pst.ok,cur.ok,'ok')}${mcell(pst.risk,cur.risk,'risk',true)}${mcell(pst.cui,cur.cui,'cui')}</tr>
   </tbody></table>`;
-  const labels = {tot:'保留（未闭环）',ot:'已超时',soon:'即将超时',ok:'未超时',risk:'🚨 威胁撤架/丢柜',cui:'催单'};
+  const labels = {tot:'保留（未闭环）',ot:'已超时',soon:'即将超时',ok:'未超时',risk:'🚨 威胁撤架/丢柜（全部未闭环）',cui:'催单'};
   box.querySelectorAll('.cmp-num').forEach(el=>el.onclick=()=>{
     const isPrev = el.dataset.day==='prev', t = el.dataset.t;
     const source = isPrev ? prevSc : sc;
