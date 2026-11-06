@@ -542,110 +542,133 @@ function dlwb(wb, fname){
   a.click();
   setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); }, 800);
 }
-// ---- 多月选择导出（2026-11-03 用户要求：支持选多月/提速/空sheet不生成） ----
-function expMonthKeys(){ return (E.periods||[]).map(function(p){ return p.key; }); }
-function mLab(key){ return parseInt(key.split('-')[1],10)+'月'; }
-function openExpMonthDialog(which, onOk){
-  var mons = expMonthKeys();
-  var cur = which===1 ? $('t1Mon').value : $('t2Mon').value;
-  var box = $('expMonBox');
-  if(!box){
-    box = document.createElement('div'); box.id='expMonBox';
-    box.style.cssText='position:absolute;z-index:99;background:#fff;border:1px solid #888;padding:12px 16px;box-shadow:0 2px 10px rgba(0,0,0,.25);min-width:260px';
-    document.body.appendChild(box);
-  }
-  var h = '<div style="font-size:13px;margin-bottom:6px">选择要导出的月份（可多选）：</div><div style="max-height:170px;overflow:auto;border:1px solid #ddd;padding:6px">';
-  mons.forEach(function(m){ h += '<label style="display:inline-block;margin:2px 12px 2px 0;cursor:pointer"><input type="checkbox" class="expMonCb" value="'+m+'"'+(m===cur?' checked':'')+'>'+mLab(m)+'</label>'; });
-  h += '</div><div style="margin:6px 0;font-size:12px"><a href="javascript:void(0)" id="expSelAll">全选</a>　<a href="javascript:void(0)" id="expSelNone">清空</a></div>';
-  h += '<div><button id="expMonOk" style="margin-right:8px;padding:3px 14px">确认导出</button><button id="expMonCancel" style="padding:3px 14px">取消</button></div>';
-  box.innerHTML = h; box.style.display='block';
-  var r = (which===1? $('t1Exp'):$('t2Exp')).getBoundingClientRect();
-  box.style.left = (window.scrollX + Math.max(4,r.left))+'px';
-  box.style.top  = (window.scrollY + r.bottom + 6)+'px';
-  var cbs = function(){ return Array.prototype.slice.call(box.querySelectorAll('.expMonCb')); };
-  $('expSelAll').onclick = function(){ cbs().forEach(function(c){ c.checked=true; }); };
-  $('expSelNone').onclick = function(){ cbs().forEach(function(c){ c.checked=false; }); };
-  $('expMonCancel').onclick = function(){ box.style.display='none'; };
-  $('expMonOk').onclick = function(){
-    var sel = cbs().filter(function(c){ return c.checked; }).map(function(c){ return c.value; });
-    box.style.display='none';
-    if(!sel.length){ alert('请至少选择一个月份'); return; }
-    onOk(sel);
-  };
-}
-function loadExpMany(which, mons, cb){
-  var out = {}, left = mons.length, failed = false;
-  if(!left){ cb(out); return; }
-  mons.forEach(function(m){
-    loadExp(which, m, function(rows){
-      if(rows===null) failed = true;
-      out[m] = rows || [];
-      if(--left===0) cb(failed ? null : out);
-    });
-  });
-}
 function exportDetail(which){
   var btn = which===1 ? $('t1Exp') : $('t2Exp');
   btn.disabled = true; var old0 = btn.textContent; btn.textContent = '加载导出组件…';
   ensureXLSX(function(){
     btn.disabled = false; btn.textContent = old0;
-    if (typeof XLSX === 'undefined') { alert('导出组件未加载（网络异常），请刷新后重试'); return; }
-    openExpMonthDialog(which, function(mons){ exportDetailRun(which, mons); });
+    exportDetailRun(which);
   });
 }
-function exportDetailRun(which, mons){
+function exportDetailRun(which){
   if (typeof XLSX === 'undefined') { alert('导出组件未加载（网络异常），请刷新后重试'); return; }
   var it, sc, xl='all', rgF, labF='ALL', btn;
   if (which===1){ it=$('t1Itv').value; sc=$('t1Scope').value; xl=$('t1Xzlx').value; rgF=$('t1Rg').value; btn=$('t1Exp'); }
   else { rgF=$('t2Rg').value; labF=$('t2Lab').value; it=$('t2Itv').value; sc=$('t2Scope').value; btn=$('t2Exp'); }
-  btn.disabled = true; var old = btn.textContent; btn.textContent = '加载并导出中…';
-  loadExpMany(which, mons, function(byMon){
+  // 多月并行加载（2026-11-03），导出速度 = 最慢的一个月而不是逐月累加
+  var mons = getExpMons(which);
+  var multi = mons.length > 1;
+  btn.disabled = true; var old = btn.textContent; btn.textContent = '加载中…（'+mons.length+'个月）';
+  Promise.all(mons.map(function(m){ return loadExpP(which, m); })).then(function(results){
     btn.disabled = false; btn.textContent = old;
-    if (!byMon) return;
+    if (results.indexOf(null) >= 0) return;
     var H1 = ['闭环目标','是否超时','工单延迟判定责任方','工单编号','创建时间','完结时间','大区','地区','三级分类名称','是否地区介入','地区处理人','工单内容'];
     var H2 = ['闭环目标','是否超时','工单编号','创建时间','统计截止日期','大区','地区','三级分类名称','当前处理人','工单内容'];
     var aoa1 = [H1], aoa2 = [H2];
-    mons.forEach(function(mon){
-      var rows = byMon[mon] || [];
-      for (var i=0;i<rows.length;i++){
-        var r = rows[i];
+    mons.forEach(function(mon, idx){
+      var rows = results[idx] || [];
+      var rowsF = rows.filter(function(r){
         var itv = which===1 ? r[10] : r[9];
         var rg  = which===1 ? r[7]  : r[6];
         var sa  = which===1 ? r[14] : r[12];
         var xz  = which===1 ? r[15] : r[13];
         var lz  = which===1 ? r[16] : 0;
-        if (it==='yes' && !itv) continue;
-        if (it==='no'  &&  itv) continue;
-        if (sc==='sa' && !sa) continue;
-        if (sc==='xz' && !xz) continue;
-        if (which===1 && xl==='xz' && !xz) continue;
-        if (which===1 && xl==='lz' && !lz) continue;
-        if (rgF!=='ALL' && rg!==rgF) continue;
-        if (which===2 && labF!=='ALL' && r[14]!==labF) continue;
+        if (it==='yes' && !itv) return false;
+        if (it==='no'  &&  itv) return false;
+        if (sc==='sa' && !sa) return false;
+        if (sc==='xz' && !xz) return false;
+        if (which===1 && xl==='xz' && !xz) return false;
+        if (which===1 && xl==='lz' && !lz) return false;
+        if (rgF!=='ALL' && rg!==rgF) return false;
+        if (which===2 && labF!=='ALL' && r[14]!==labF) return false;
+        return true;
+      });
+      var mp = multi ? [monShort(mon)] : [];
+      rowsF.forEach(function(r){
         if (which===1){
-          if (r[0]===1) aoa1.push([r[1],r[2],r[3],r[4],r[5],r[6],r[7],r[8],r[9],r[10]?'是':'否',r[11],r[13]]);
-          else          aoa2.push([r[1],r[2],r[4],r[5],E.asof,r[7],r[8],r[9],r[12],r[13]]);
+          if (r[0]===1) aoa1.push(mp.concat([r[1],r[2],r[3],r[4],r[5],r[6],r[7],r[8],r[9],r[10]?'是':'否',r[11],r[13]]));
+          else          aoa2.push(mp.concat([r[1],r[2],r[4],r[5],E.asof,r[7],r[8],r[9],r[12],r[13]]));
         } else {
-          if (r[0]===1) aoa1.push([r[1],r[2],'',r[3],r[4],r[5],r[6],r[7],r[8],r[9]?'是':'否',r[10],r[11]]);
-          else          aoa2.push([r[1],r[2],r[3],r[4],E.asof,r[6],r[7],r[8],'',r[11]]);
+          if (r[0]===1) aoa1.push(mp.concat([r[1],r[2],'',r[3],r[4],r[5],r[6],r[7],r[8],r[9]?'是':'否',r[10],r[11]]));
+          else          aoa2.push(mp.concat([r[1],r[2],r[3],r[4],E.asof,r[6],r[7],r[8],'',r[11]]));
         }
-      }
+      });
     });
-    if (aoa1.length===1 && aoa2.length===1){ alert('当前筛选下无数据'); return; }
-    var label = mons.length===1 ? mLab(mons[0]) : (mLab(mons[0]).replace('月','') + '-' + mLab(mons[mons.length-1]));
-    var nm = which===1 ? '升级工单明细' : '十大客诉工单明细';
+    if (aoa1.length === 1 && aoa2.length === 1) { alert('所选月份和筛选条件下没有工单数据'); return; }
     var wb = XLSX.utils.book_new();
-    if (aoa1.length>1){
-      var s1 = XLSX.utils.aoa_to_sheet(aoa1);
-      s1['!cols'] = [{wch:8},{wch:8},{wch:16},{wch:14},{wch:17},{wch:17},{wch:8},{wch:10},{wch:20},{wch:11},{wch:10},{wch:60}];
-      XLSX.utils.book_append_sheet(wb, s1, label+'已完结'+nm);
+    var mc = multi ? [{wch:7}] : [];
+    var s1 = XLSX.utils.aoa_to_sheet(aoa1), s2 = XLSX.utils.aoa_to_sheet(aoa2);
+    s1['!cols'] = mc.concat([{wch:8},{wch:8},{wch:16},{wch:14},{wch:17},{wch:17},{wch:8},{wch:10},{wch:20},{wch:11},{wch:10},{wch:60}]);
+    s2['!cols'] = mc.concat([{wch:8},{wch:8},{wch:14},{wch:17},{wch:12},{wch:8},{wch:10},{wch:20},{wch:10},{wch:60}]);
+    var nm = which===1 ? '升级工单明细' : '十大客诉工单明细';
+    var mlabel = multi ? (monShort(mons[0]).replace('月','') + '-' + monShort(mons[mons.length-1])) : monShort(mons[0]);
+    XLSX.utils.book_append_sheet(wb, s1, mlabel+'已完结'+nm);
+    // 2026-11-03：未完结 sheet 无数据时默认不生成
+    if (aoa2.length > 1) XLSX.utils.book_append_sheet(wb, s2, mlabel+'未完结'+nm);
+    dlwb(wb, (which===1?'表1_':'表2_') + mlabel + nm + '_' + E.asof + '.xlsx');
+  });
+}
+// ---------- 导出当前数据表内容（2026-11-04）：按当前筛选与展示月份，导出表格本身 ----------
+function tableToAoa(tbl){
+  var grid = [];
+  function txt(c){ return c.textContent.replace(/\s+/g, ' ').replace(/[▶▼]/g, '').trim(); }
+  var rlen = tbl.rows.length;
+  for (var ri = 0; ri < rlen; ri++){
+    var r = tbl.rows[ri];
+    if (!grid[ri]) grid[ri] = [];
+    var ci = 0;
+    for (var k = 0; k < r.cells.length; k++){
+      var c = r.cells[k];
+      while (grid[ri][ci] !== undefined) ci++;
+      var rs = c.rowSpan || 1, cs = c.colSpan || 1;
+      for (var i = 0; i < rs; i++){
+        if (!grid[ri+i]) grid[ri+i] = [];
+        for (var j = 0; j < cs; j++) grid[ri+i][ci+j] = (i===0) ? txt(c) : '';
+      }
+      ci += cs;
     }
-    if (aoa2.length>1){
-      var s2 = XLSX.utils.aoa_to_sheet(aoa2);
-      s2['!cols'] = [{wch:8},{wch:8},{wch:14},{wch:17},{wch:12},{wch:8},{wch:10},{wch:20},{wch:10},{wch:60}];
-      XLSX.utils.book_append_sheet(wb, s2, label+'未完结'+nm);
+  }
+  var ncol = 0;
+  grid.forEach(function(g){ ncol = Math.max(ncol, g.length); });
+  grid.forEach(function(g){ while (g.length < ncol) g.push(''); });
+  var nhead = tbl.tHead ? tbl.tHead.rows.length : 1;
+  var aoa = [];
+  if (nhead > 1){
+    var combined = [];
+    for (var c2 = 0; c2 < ncol; c2++){
+      var parts = [];
+      for (var h = 0; h < nhead; h++){ var t = grid[h][c2]; if (t && parts.indexOf(t) < 0) parts.push(t); }
+      combined.push(parts.join('·'));
     }
-    dlwb(wb, (which===1?'表1_':'表2_') + label + nm + '_' + E.asof + '.xlsx');
+    aoa.push(combined);
+    for (var r2 = nhead; r2 < grid.length; r2++) aoa.push(grid[r2]);
+  } else aoa = grid;
+  // 纯数字去千分位，便于 Excel 求和
+  aoa.forEach(function(row, idx){
+    if (idx === 0) return;
+    for (var c3 = 0; c3 < row.length; c3++){
+      var t = row[c3];
+      if (/^\d[\d,]*$/.test(t)) row[c3] = Number(t.replace(/,/g, ''));
+    }
+  });
+  return aoa;
+}
+function exportTable(which){
+  var btn = $(which===1 ? 't1TblExp' : 't2TblExp');
+  btn.disabled = true; var old0 = btn.textContent; btn.textContent = '导出中…';
+  ensureXLSX(function(){
+    btn.disabled = false; btn.textContent = old0;
+    if (typeof XLSX === 'undefined') { alert('导出组件未加载（网络异常），请刷新后重试'); return; }
+    var tbl = $(which===1 ? 't1Tbl' : 't2Tbl');
+    var aoa = tableToAoa(tbl);
+    if (!aoa.length) { alert('表格暂无数据'); return; }
+    var wb = XLSX.utils.book_new();
+    var ws = XLSX.utils.aoa_to_sheet(aoa);
+    ws['!cols'] = aoa[0].map(function(h){ return {wch: Math.max(9, Math.min(24, String(h).length * 2 + 4))}; });
+    var mon = monShort(curMon(which));
+    var nm = which===1 ? '数据表1' : '数据表2';
+    XLSX.utils.book_append_sheet(wb, ws, (nm + '_' + mon).slice(0, 31));
+    dlwb(wb, nm + '_' + mon + '_' + E.asof + '.xlsx');
   });
 }
 window.exportDetail = exportDetail;
