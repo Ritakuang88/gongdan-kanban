@@ -315,6 +315,38 @@ $('repRg').addEventListener('change', function(){ fillRepDs(); renderRep(); });
 
 // ---------- 1-9月官方表 ----------
 (function(){
+  // 2026-11-06: 官方表缺失的整月(如10月)用本看板自算遵时率补列/补值(带*标注)
+  (function fillMissingMonths(){
+    var h0 = E.hist19;
+    (E.periods||[]).forEach(function(p){
+      var mnum = parseInt(p.key.split('-')[1],10);
+      if (mnum < 10) return;
+      var lab = p.label.indexOf('*')<0 ? p.label+'*' : p.label;
+      var idx = -1;
+      for (var i=0;i<h0.months.length;i++){
+        if (parseInt(h0.months[i],10) === mnum) { idx = i; break; }
+      }
+      var vals = h0.rows.map(function(r){
+        var rg = (r[0]==='全网整体') ? 'ALL' : (r[0]+'大区');
+        var rec = null;
+        try { rec = E.t1[p.key]['ov']['all']['yes'][rg]; } catch(e){ rec = null; }
+        if (!rec || !rec.zun || (rec.zun[0]+rec.zun[1])<=0) return null;
+        return Math.round(rec.zun[1]/(rec.zun[0]+rec.zun[1])*1000)/10;
+      });
+      if (idx >= 0){
+        var allNull = h0.rows.every(function(r){ return r[idx+1]==null; });
+        if (allNull){
+          h0.rows.forEach(function(r,i){ r[idx+1]=vals[i]; });
+          if (h0.months[idx].indexOf('*')<0) h0.months[idx]=lab;
+        }
+      } else {
+        var pos = 0;
+        for (var j=0;j<h0.months.length;j++){ if (parseInt(h0.months[j],10) < mnum) pos = j+1; }
+        h0.months.splice(pos,0,lab);
+        h0.rows.forEach(function(r,i){ r.splice(pos+1,0,vals[i]); });
+      }
+    });
+  })();
   var h = E.hist19, html = '<thead><tr><th class="lft">大区</th>';
   var lastM = h.months[h.months.length-1].replace('*','').replace(/(\d+月).*/, '$1');
   $('histTitle').textContent = '📈 26年' + h.months[0] + '-' + lastM + '各大区工单遵时闭环率';
