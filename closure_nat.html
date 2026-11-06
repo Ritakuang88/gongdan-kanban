@@ -117,7 +117,7 @@
 <div class="wrap">
   <header>
     <div class="hd-l">
-      <h1>⏱️ 地区工单遵时闭环率<span id="staleTip" style="display:none;margin-left:14px;font-size:15px;font-weight:700;color:#d93025">（数据更新中请稍等）</span></h1>
+      <h1>⏱️ 地区工单遵时闭环率<span id="staleTip" style="display:none;margin-left:14px;font-size:15px;font-weight:700;color:#000">（数据更新中请稍等）</span></h1>
       <div class="meta" id="metaLine"></div>
     </div>
   </header>
@@ -253,14 +253,15 @@ var MON_LAST = {};   // 各表「最近勾选的展示月份」
 
 function pByKey(k){ for(var i=0;i<PERIODS.length;i++) if(PERIODS[i].key===k) return PERIODS[i]; return PERIODS[0]; }
 function pct(a,b){ if(!b) return '—'; return Math.round(a/b*100)+'%'; }
-function rateCls(a,b){ if(!b) return ''; return Math.round(a/b*100)>=90?'rate-g':'rate-r'; }
+function rateCls(a,b){ if(!b) return ''; var r=a/b; return r>=0.9?'rate-g':'rate-r'; }
 function fmtInt(n){ return (n==null?'—':Number(n).toLocaleString('zh-CN')); }
 function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 function dlt(cur,prev,neutralZero){
   var d = cur - prev;
   if(d===0) return '<span class="d0">—</span>';
+  var pc = prev? ' ('+Math.round(Math.abs(d)/prev*100)+'%)' : '';
   var cls = d>0?'d-up':'d-dn';
-  return '<span class="'+cls+'">'+(d>0?'↑':'↓')+Math.abs(d)+'</span>';
+  return '<span class="'+cls+'">'+(d>0?'↑':'↓')+Math.abs(d)+pc+'</span>';
 }
 function optFill(sel, items, def){
   sel.innerHTML = items.map(function(it){ return '<option value="'+it[0]+'"'+(it[0]===def?' selected':'')+'>'+it[1]+'</option>'; }).join('');
@@ -638,17 +639,16 @@ function exportDetailRun(which){
   // 多月并行加载（2026-11-03），导出速度 = 最慢的一个月而不是逐月累加
   var mons = getExpMons(which);
   var multi = mons.length > 1;
-  btn.disabled = true; var old = btn.textContent; btn.textContent = '下载中，请稍候…（'+mons.length+'个月）';
+  btn.disabled = true; var old = btn.textContent; btn.textContent = '加载中…（'+mons.length+'个月）';
   Promise.all(mons.map(function(m){ return loadExpP(which, m); })).then(function(results){
-    if (results.indexOf(null) >= 0) { btn.disabled = false; btn.textContent = old; return; }
-    // 先让浏览器绘制“下载中”状态，再同步生成 Excel，避免数据已缓存时提示一闪而过。
-    setTimeout(function(){
-    var H1 = ['闭环目标','是否超时','工单延迟判定责任方','工单编号','货架id','货架编码','创建时间','完结时间','大区','地区','三级分类名称','是否地区介入','地区处理人','工单内容'];
-    var H2 = ['闭环目标','是否超时','工单编号','货架id','货架编码','创建时间','统计截止日期','大区','地区','三级分类名称','当前处理人','工单内容'];
+    btn.disabled = false; btn.textContent = old;
+    if (results.indexOf(null) >= 0) return;
+    var H1 = ['闭环目标','是否超时','工单延迟判定责任方','工单编号','创建时间','完结时间','大区','地区','三级分类名称','是否地区介入','地区处理人','工单内容'];
+    var H2 = ['闭环目标','是否超时','工单编号','创建时间','统计截止日期','大区','地区','三级分类名称','当前处理人','工单内容'];
     if (multi){ H1 = ['月份'].concat(H1); H2 = ['月份'].concat(H2); }   // 多月导出加「月份」列
     var aoa1 = [H1], aoa2 = [H2];
     mons.forEach(function(mon, idx){
-      var rows = (results[idx] || []).map(function(r0){ var r = r0.slice(2); r.sid = r0[0]; r.scode = r0[1]; return r; });
+      var rows = results[idx] || [];
       var rowsF = rows.filter(function(r){
         var itv = which===1 ? r[10] : r[9];
         var rg  = which===1 ? r[7]  : r[6];
@@ -668,29 +668,26 @@ function exportDetailRun(which){
       var mp = multi ? [monShort(mon)] : [];
       rowsF.forEach(function(r){
         if (which===1){
-          if (r[0]===1) aoa1.push(mp.concat([r[1],r[2],r[3],r[4],r.sid,r.scode,r[5],r[6],r[7],r[8],r[9],r[10]?'是':'否',r[11],r[13]]));
-          else          aoa2.push(mp.concat([r[1],r[2],r[4],r.sid,r.scode,r[5],E.asof,r[7],r[8],r[9],r[12],r[13]]));
+          if (r[0]===1) aoa1.push(mp.concat([r[1],r[2],r[3],r[4],r[5],r[6],r[7],r[8],r[9],r[10]?'是':'否',r[11],r[13]]));
+          else          aoa2.push(mp.concat([r[1],r[2],r[4],r[5],E.asof,r[7],r[8],r[9],r[12],r[13]]));
         } else {
-          if (r[0]===1) aoa1.push(mp.concat([r[1],r[2],'',r[3],r.sid,r.scode,r[4],r[5],r[6],r[7],r[8],r[9]?'是':'否',r[10],r[11]]));
-          else          aoa2.push(mp.concat([r[1],r[2],r[3],r.sid,r.scode,r[4],E.asof,r[6],r[7],r[8],'',r[11]]));
+          if (r[0]===1) aoa1.push(mp.concat([r[1],r[2],'',r[3],r[4],r[5],r[6],r[7],r[8],r[9]?'是':'否',r[10],r[11]]));
+          else          aoa2.push(mp.concat([r[1],r[2],r[3],r[4],E.asof,r[6],r[7],r[8],'',r[11]]));
         }
       });
     });
-    if (aoa1.length === 1 && aoa2.length === 1) { btn.disabled = false; btn.textContent = old; alert('所选月份和筛选条件下没有工单数据'); return; }
+    if (aoa1.length === 1 && aoa2.length === 1) { alert('所选月份和筛选条件下没有工单数据'); return; }
     var wb = XLSX.utils.book_new();
     var mc = multi ? [{wch:7}] : [];
     var s1 = XLSX.utils.aoa_to_sheet(aoa1), s2 = XLSX.utils.aoa_to_sheet(aoa2);
-    s1['!cols'] = mc.concat([{wch:8},{wch:8},{wch:16},{wch:14},{wch:12},{wch:14},{wch:17},{wch:17},{wch:8},{wch:10},{wch:20},{wch:11},{wch:10},{wch:60}]);
-    s2['!cols'] = mc.concat([{wch:8},{wch:8},{wch:14},{wch:12},{wch:14},{wch:17},{wch:12},{wch:8},{wch:10},{wch:20},{wch:10},{wch:60}]);
+    s1['!cols'] = mc.concat([{wch:8},{wch:8},{wch:16},{wch:14},{wch:17},{wch:17},{wch:8},{wch:10},{wch:20},{wch:11},{wch:10},{wch:60}]);
+    s2['!cols'] = mc.concat([{wch:8},{wch:8},{wch:14},{wch:17},{wch:12},{wch:8},{wch:10},{wch:20},{wch:10},{wch:60}]);
     var nm = which===1 ? '升级工单明细' : '十大客诉工单明细';
     var mlabel = multi ? (monShort(mons[0]).replace('月','') + '-' + monShort(mons[mons.length-1])) : monShort(mons[0]);
     XLSX.utils.book_append_sheet(wb, s1, mlabel+'已完结'+nm);
     // 2026-11-03：未完结 sheet 无数据时默认不生成
     if (aoa2.length > 1) XLSX.utils.book_append_sheet(wb, s2, mlabel+'未完结'+nm);
     dlwb(wb, (which===1?'表1_':'表2_') + mlabel + nm + '_' + E.asof + '.xlsx');
-    btn.textContent = '下载成功';
-    setTimeout(function(){ btn.disabled = false; btn.textContent = old; }, 1500);
-    }, 80);
   });
 }
 // ---------- 导出当前数据表内容（2026-11-04）：按当前筛选与展示月份，导出表格本身 ----------
