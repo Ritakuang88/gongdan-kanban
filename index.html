@@ -149,9 +149,10 @@
   .filters input{width:150px}
   .filter-submit{min-height:38px;white-space:nowrap}
   .filter-submit:focus-visible,.modal-close:focus-visible{outline:3px solid rgba(43,74,203,.35);outline-offset:2px}
-  .grouped-drill{display:grid;gap:14px}
-  .shelf-group{border:1px solid var(--line);border-radius:8px;overflow:hidden;background:#fff}
+  .grouped-drill{display:grid;grid-template-columns:minmax(0,1fr);gap:14px;min-width:0}
+  .shelf-group{border:1px solid var(--line);border-radius:8px;overflow:hidden;background:#fff;min-width:0}
   .shelf-group-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 14px;background:#f0f2f8;line-height:1.7}
+  .shelf-group-head>div,.shelf-issue>div{min-width:0;overflow-wrap:anywhere}
   .shelf-group-head strong{color:#1c2b6d;font-size:14px}
   .shelf-group-id{margin-left:12px;color:#666;font-size:12px}
   .shelf-count{flex:0 0 auto;font-weight:700;color:#8e3b2f;white-space:nowrap}
@@ -453,7 +454,6 @@ td.tl-ot-r{color:#FF0000;font-weight:700}
         <div><label>工单内容（关键词搜索）</label><input data-kw="工单内容" placeholder="输入内容关键词"></div>
         <button class="btn primary filter-submit" type="button" id="queryDetail">查询</button>
         <button class="btn" id="resetV2">重置</button>
-        <button class="btn mobile-only" id="dtToggle">展开全部列</button>
       </div>
       <div class="scroll"><div id="detailTable"></div></div>
       <div class="foot" id="detailCount"></div>
@@ -732,38 +732,45 @@ function showDrill(title, rows, options = {}){
   renderModalRows();
   document.getElementById('modalMask').classList.add('show');
 }
-function renderGroupedModalRows(rows){
+// 两处工单卡片统一按「处理人＋货架ID」合并；货架编码仅作展示，不参与分组。
+function groupRowsByHandlerShelf(rows, sortFn){
+  const t = r => r['创建时间'] ? +r['创建时间'] : 0;
+  const compare = sortFn || ((a,b)=>t(b)-t(a));
   const groups = new Map();
   rows.forEach(r=>{
-    const key = [r['处理人']??'',r['货架编码']??'',r['货架ID']??''].join('\u0001');
+    const key = [String(r['处理人']??'').trim(),String(r['货架ID']??'').trim()].join('\u0001');
     if(!groups.has(key)) groups.set(key, []);
     groups.get(key).push(r);
   });
-  const t = r => r['创建时间'] ? +r['创建时间'] : 0;
-  const sortedGroups = [...groups.values()].map(arr=>{   // 组内创建时间倒序，组间按最新单倒序
-    arr.sort((a,b)=>t(b)-t(a));
-    return arr;
-  }).sort((a,b)=>t(b[0])-t(a[0]));
+  return [...groups.values()].map(arr=>[...arr].sort(compare)).sort((a,b)=>compare(a[0],b[0]));
+}
+function buildGroupedCards(rows, sortFn){
+  const sortedGroups = groupRowsByHandlerShelf(rows, sortFn);
   const tag = s => s==='已超时'?'ot':(s==='未超时'?'ok':'soon');
   let html = '<div class="grouped-drill">';
   sortedGroups.forEach(items=>{
     const first = items[0];
-    const shelfCode = first['货架编码'] || '（无货架编码）';
-    const shelfId = first['货架ID'] || '—';
-    html += `<section class="shelf-group"><div class="shelf-group-head"><div><strong>${escText(shelfCode)}</strong><span class="shelf-group-id">货架ID：${escText(shelfId)} ｜ 处理人：${escText(first['处理人'])}</span></div><span class="shelf-count">${items.length} 个问题</span></div>`;
+    const shelfCodes = [...new Set(items.map(r=>String(r['货架编码']??'').trim()).filter(Boolean))];
+    const shelfCode = shelfCodes.length ? shelfCodes.join('、') : '（无货架编码）';
+    const shelfId = String(first['货架ID']??'').trim() || '（无货架ID）';
+    html += `<section class="shelf-group" data-handler="${escText(first['处理人'])}" data-shelf-id="${escText(shelfId)}"><div class="shelf-group-head"><div><strong>${escText(shelfCode)}</strong><span class="shelf-group-id">货架ID：${escText(shelfId)} ｜ 处理人：${escText(first['处理人'])}</span></div><span class="shelf-count">${items.length} 个问题</span></div>`;
     items.forEach(r=>{
       const lv = r['客户等级'] ?? '';
       const lvCls = lv==='S级'?'s':lv==='A级'?'a':lv==='B级'?'b':'y';
       const status = r['超时状态'] ?? '';
       const days = r['超时天数'];
-      html += `<div class="shelf-issue"><div class="shelf-issue-meta"><div>工单编号：${escText(r['工单编号'])}</div><div>创建时间：${escText(fmtDT(r['创建时间']))}</div><div>${escText(r['大区'])} ${escText(r['地区'])} ｜ ${escText(r['新装/留存'])}</div><div>客户等级：<span class="lvl ${lvCls}">${escText(lv)}</span></div></div><div><div class="shelf-issue-title">${escText(r['工单分类三级'])} <span class="tag ${tag(status)}">${escText(status)}</span>${Number(days)>0?`<span class="tag ot">超时 ${escText(days)} 天</span>`:''}</div><div class="shelf-issue-content">${escText(maskTel(r['工单内容']))}</div></div></div>`;
+      const reminders = Number(r['催单次数'])||0;
+      html += `<div class="shelf-issue" data-ticket-id="${escText(r['工单编号'])}"><div class="shelf-issue-meta"><div>工单编号：${escText(r['工单编号'])}</div><div>创建时间：${escText(fmtDT(r['创建时间']))}</div><div>${escText(r['大区'])} ${escText(r['地区'])} ｜ ${escText(r['新装/留存'])}</div><div>客户等级：<span class="lvl ${lvCls}">${escText(lv)}</span></div><div>工单状态：${escText(r['工单状态'])}${reminders>0?` ｜ 催单 ${reminders} 次`:''}</div></div><div><div class="shelf-issue-title">${escText(r['工单分类三级'])} <span class="tag ${tag(status)}">${escText(status)}</span>${Number(days)>0?`<span class="tag ot">超时 ${escText(days)} 天</span>`:''}</div><div class="shelf-issue-content">${escText(maskTel(r['工单内容']))}</div></div></div>`;
     });
     html += '</section>';
   });
   if(!rows.length) html += '<div class="grouped-empty">当前筛选条件下没有问题</div>';
-  html += '</div>';
-  document.getElementById('modalBody').innerHTML = html;
-  document.getElementById('modalFoot').textContent = `共 ${rows.length} 单（${sortedGroups.length} 个货架，筛选后）／ 下钻共 ${modalRows.length} 单 ｜ 同一处理人、同一货架的问题已合并，按创建时间新→旧`;
+  return {html:html+'</div>', groupCount:sortedGroups.length};
+}
+function renderGroupedModalRows(rows){
+  const result = buildGroupedCards(rows);
+  document.getElementById('modalBody').innerHTML = result.html;
+  document.getElementById('modalFoot').textContent = `共 ${rows.length} 单（${result.groupCount} 个「处理人＋货架ID」组合，筛选后）／ 下钻共 ${modalRows.length} 单 ｜ 同一处理人、同一货架ID的问题已合并，按创建时间新→旧 ｜ 工单内容完整展示`;
 }
 // 同一处理人合并显示：按处理人分组，组间按组内最新创建时间倒序，组内按创建时间倒序
 function groupRowsByHandler(rows){
@@ -1280,8 +1287,6 @@ document.getElementById('f1Status').addEventListener('change', renderV1);
 
 // ============ 视图2：工单明细 ============
 const DETAIL_COLS = ['处理人','货架编码','新装/留存','客户等级','工单分类三级','工单内容','催单次数','创建时间','货架ID','工单编号','大区','地区','超时状态','超时天数','工单状态'];
-// 各列默认宽(px)：处理人≈4个中文字符；拖动表头分隔线可改，筛选重渲后恢复默认
-const DETAIL_COL_W = [72, 92, 74, 74, 118, 250, 68, 145, 95, 125, 64, 80, 84, 74, 80];
 const LV_RANK = {'S级':6,'A级':5,'B级':4,'C级':3,'D级':2,'E级':1};
 const ST_RANK = {'已超时':0,'即将超时':1,'未超时':2};
 const XZ_RANK = {'新装':0,'留存':1};
@@ -1303,52 +1308,13 @@ function detailRows(){
 function renderDetailTable(){
   const rows = detailRows();
   updateHeadOT(document.querySelector('#detailFilters select[data-k="大区"]').value);   // 右上角总超时工单与本页大区筛选联动
-  const groups = groupRowsByHandler(rows);   // 同一处理人合并 → 创建时间倒序
-  const tag = s => s==='已超时'?'ot':(s==='未超时'?'ok':'soon');
-  const cols = DETAIL_COLS;
-  let html = `<table><colgroup>${DETAIL_COL_W.map(w=>`<col style="width:${w}px">`).join('')}</colgroup><thead><tr>${cols.map(c=>`<th>${c==='超时状态'?'是否已超时':c}</th>`).join('')}</tr></thead><tbody>`;
-  groups.forEach(arr=>{
-    arr.forEach((r, gi)=>{
-      html += '<tr>' + cols.map(c=>{
-        if(c==='处理人'){
-          if(gi) return '';
-          return `<td rowspan="${arr.length}" class="hl-name hcell" style="vertical-align:top">${escText(r['处理人']??'')}</td>`;
-        }
-        let v = r[c];
-        if(c==='客户等级'){
-          const cls = v==='S级'?'s':v==='A级'?'a':v==='B级'?'b':'y';
-          return `<td class="num"><span class="lvl ${cls}">${v??''}</span></td>`;
-        }
-        if(c==='催单次数'){ const n=Number(v)||0; return `<td class="num">${n>2?`<span class="lvl s">${v}</span>`:(v??'')}</td>`; }
-        if(c==='创建时间') v = fmtDT(v);
-        if(c==='超时状态') return `<td><span class="tag ${tag(v)}">${v}</span></td>`;
-        if(c==='超时天数') return `<td class="num ${v>0?'hot':''}">${v??''}</td>`;
-        if(c==='工单内容') return `<td style="white-space:normal">${maskTel(v)}</td>`;
-        return `<td>${v??''}</td>`;
-      }).join('') + '</tr>';
-    });
-  });
-  document.getElementById('detailTable').innerHTML = html + '</tbody></table>';
-  if(MOBILE){
-    const t = document.querySelector('#detailTable table');
-    const CORE = new Set([0,1,2,3,4,5,12]);  // 处理人/货架编码/新装留存/客户等级/三级/内容/是否已超时
-    if(t){
-      t.classList.add('compact');
-      t.querySelectorAll('tr').forEach(tr=>[...tr.children].forEach((c,i)=>{ if(!CORE.has(i)) c.classList.add('col-x'); }));
-      t.querySelectorAll('colgroup col').forEach((c,i)=>{ if(!CORE.has(i)) c.classList.add('col-x'); });   // 固定布局下同步隐藏对应列宽
-    }
-  }
-  makeResizable(document.querySelector('#detailTable table'));
-  document.getElementById('detailCount').textContent = `共 ${rows.length} 条（筛选后）／ 全部 ${DATA.length} 条 ｜ 排序：同一处理人合并 → 创建时间新→旧 ｜ 拖动表头列分隔线可调整列宽`;
+  const result = buildGroupedCards(rows, cmpOrder);
+  document.getElementById('detailTable').innerHTML = result.html;
+  document.getElementById('detailCount').textContent = `共 ${rows.length} 条（筛选后）／ 全部 ${DATA.length} 条 ｜ ${result.groupCount} 个「处理人＋货架ID」组合 ｜ 已超时＞即将超时＞未超时，组内按创建时间新→旧 ｜ 工单内容完整展示`;
 }
 document.querySelectorAll('#detailFilters select, #detailFilters input').forEach(el=>{
   el.addEventListener(el.tagName==='SELECT'?'change':'input', renderDetailTable);
 });
-document.getElementById('dtToggle').onclick = ()=>{
-  const t = document.querySelector('#detailTable table'); if(!t) return;
-  t.classList.toggle('compact');
-  document.getElementById('dtToggle').textContent = t.classList.contains('compact') ? '展开全部列' : '收起列';
-};
 document.getElementById('resetV2').onclick = ()=>{
   document.querySelectorAll('#detailFilters select').forEach(resetSelect);
   document.querySelectorAll('#detailFilters input').forEach(x=>x.value='');
