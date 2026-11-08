@@ -1189,8 +1189,8 @@ function renderWeekTbl(rg,st){
       h += `<td class="num">${multi?dltW(last-first,def.key):'—'}</td></tr>`;
     });
   };
-  rows.forEach(({R})=>appendRows(R));
   appendRows('',true);
+  rows.forEach(({R})=>appendRows(R));
   tbl.innerHTML = h + '</tbody></table>';
 }
 
