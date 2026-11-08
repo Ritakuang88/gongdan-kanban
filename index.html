@@ -76,13 +76,7 @@
 .cui-badge{display:inline-block;padding:1px 8px;border-radius:9px;font-weight:700;font-size:12px;background:#fdf1f0;color:#c62828;border:1px solid #e57373}
 .row-drill{cursor:pointer}
 .row-drill:hover td{background:#fdf6ec}
-#riskTable td.risk-content{color:#1a1712}
 .risk-ico{margin-right:4px}
-.h3stat{font-size:12px;color:var(--sub);font-weight:400;margin-left:8px}
-.risk-panel{border:1.5px solid #e57373;background:#fff}
-  .risk-panel h3{color:#c62828}
-  .risk-panel td.risk-content{white-space:normal;min-width:260px;font-size:12px;color:#666}
-    #riskTable tr.grp-end td{border-bottom:2px solid #d8d2c8}
   .delta-up{color:#c62828;font-weight:700}
   .delta-dn{color:#2e7d32;font-weight:700}
   .up-notice{text-align:center;line-height:2}
@@ -105,12 +99,6 @@
   /* 明细表：固定布局+colgroup默认列宽（处理人≈4个中文字宽），拖动调宽不卡顿 */
   #detailTable table{table-layout:fixed}
   #detailTable td{overflow:hidden;text-overflow:ellipsis}
-  /* 货架表：固定布局+colgroup默认列宽（保证底部横向滚动条），冻结首行+地区列 */
-  #riskTable table{table-layout:fixed}
-  #riskTable td{overflow:hidden;text-overflow:ellipsis}
-  #riskTable thead th{z-index:4}
-  #riskTable thead th:first-child{left:0;z-index:9}
-  #riskTable td.rg-cell{position:sticky;left:0;z-index:3;background:#fff;background-clip:padding-box}
   /* 滚动条（含底部横条）可见样式 */
   .scroll::-webkit-scrollbar{width:10px;height:10px}
   .scroll::-webkit-scrollbar-thumb{background:#c3cbdd;border-radius:5px}
@@ -162,6 +150,13 @@
   .shelf-issue-title .tag{margin-left:6px;vertical-align:1px}
   .shelf-issue-content{display:block;white-space:pre-wrap;line-height:1.75;min-width:0;word-break:break-word;overflow-wrap:anywhere;color:#33302b;max-height:none;overflow:visible}
   .grouped-empty{padding:28px;text-align:center;color:var(--sub)}
+  .detail-risk-summary{display:flex;align-items:center;flex-wrap:wrap;gap:4px 10px;margin:0 0 12px;padding:9px 12px;background:#fdf1f0;border-radius:8px;color:#8e3b2f;font-size:13px;line-height:1.7}
+  .detail-risk-summary strong{white-space:nowrap}
+  .risk-count-drill{border:0;background:transparent;color:#c62828;padding:2px 4px;font-size:14px;font-weight:700;text-decoration:underline;cursor:pointer;border-radius:4px}
+  .risk-count-drill:hover{background:#f9ded9}
+  .risk-count-drill:focus-visible{outline:3px solid rgba(198,40,40,.3);outline-offset:2px}
+  .risk-count-drill:disabled{color:var(--sub);cursor:default;text-decoration:none;background:transparent}
+  .detail-risk-summary span{color:#6f514b}
   .msw{position:relative;display:inline-block;min-width:120px}
   .msw-btn{padding:7px 10px;border:1px solid var(--line);border-radius:6px;background:#fff;font-size:13px;width:100%;min-width:120px;text-align:left;cursor:pointer;color:var(--ink)}
   .msw-btn::after{content:'▾';float:right;color:#999}
@@ -243,8 +238,9 @@
     .shelf-issue{grid-template-columns:1fr;gap:8px;padding:12px}
     .shelf-issue-meta{line-height:1.7}
     .shelf-issue-content{font-size:13px}
+    .risk-count-drill{min-height:44px;padding:6px 8px}
+    .detail-risk-summary{align-items:flex-start;font-size:12px}
     /* 手机端：超时大区分析只保留「超时积压处理人」板块，其余默认隐藏 */
-    nav button[data-v="v3"]{display:none}
     #v1 .panel:not(.th-panel){display:none}
     /* 手机端：积压处理人 + 工单明细 筛选器缩小 */
     #v1 .th-panel .filters,#detailFilters{gap:6px}
@@ -381,8 +377,7 @@ td.tl-ot-r{color:#FF0000;font-weight:700}
 <div class="notice-bar">📌 <b>客诉工单3种处理方式</b>（<a id="openGuide">方式①附图点击查看</a>）：①【督导/店主】丰e管家APP-应用【工单宝】-跟进-转单（对象：客服）；②【中台运营】苍穹-市场-二线工作台-转单（对象：客服）；③【督导+运营】企微-工作台-客户运维-星汉工单宝-详情-跟进-转单（对象：客服）<br>📌 <b>星云-设备离线工单</b>：涉及新装费用纠纷拔电情况：地区转单给客服 → 客服群内反馈销售侧 → CM/BDM推动跟进；其余情况无需转单，设备恢复在线后，星云会自动关单 ｜ <span class="nb-warn">⚠ 休小长假、已提离职等，请相关负责人提前通知匡碧莹更改对接人，避免工单积压</span></div>
 <nav>
   <button class="active" data-v="v1">📊 <b>超时大区分析</b><span class="nav-badge" id="nbV1"></span></button>
-  <button data-v="v2">📋 <b>工单明细（未闭环）</b><span class="nav-badge dark" id="nbV2"></span></button>
-  <button data-v="v3">🗺️ <b>货架维度风险工单（未闭环）</b><span class="nav-badge risk" id="nbV3"></span></button>
+  <button data-v="v2">📋 <b>未处理工单（含威胁撤架/丢柜）</b><span class="nav-badge dark" id="nbV2"></span></button>
   <button data-v="v4">⏱️ <b>地区工单遵时闭环率</b>
 </button>
 
@@ -452,32 +447,17 @@ td.tl-ot-r{color:#FF0000;font-weight:700}
         <div><label>工单编号（关键词搜索）</label><input data-kw="工单编号" placeholder="输入工单编号"></div>
         <div><label>客户等级（可多选）</label><select data-k="客户等级" class="lv-ms"><option value="">全部</option><option>S级</option><option>A级</option><option>B级</option><option>C级</option><option>D级</option><option>E级</option><option>无等级</option></select></div>
         <div><label>工单内容（关键词搜索）</label><input data-kw="工单内容" placeholder="输入内容关键词"></div>
+        <div><label>🔁 疑似重复工单</label><select id="detailDuplicate"><option value="">全部</option><option value="1">仅同一货架ID多个未处理工单</option></select></div>
+        <div><label>🚨威胁撤架/丢柜</label><select id="detailRisk"><option value="">全部</option><option value="1">仅威胁货架的全部未处理工单</option></select></div>
         <button class="btn primary filter-submit" type="button" id="queryDetail">查询</button>
         <button class="btn" id="resetV2">重置</button>
       </div>
+      <div class="detail-risk-summary" id="detailRiskSummary"><strong>🚨 威胁撤架/丢柜</strong><button type="button" class="risk-count-drill" id="detailRiskDrill" title="点击数字下钻查看明细"><b id="detailRiskCount">0</b> 单</button><span id="detailRiskNote">同一货架ID下全部未处理工单合并展示，点击数字下钻明细</span></div>
       <div class="scroll"><div id="detailTable"></div></div>
       <div class="foot" id="detailCount"></div>
     </div>
   </section>
 
-  <section id="v3" class="view">
-    <div class="panel risk-panel">
-      <h3>🏪 货架维度风险工单（同一货架编码下所有问题归并 · 🚨=威胁撤架/丢柜 · 点击行下钻明细） <span id="riskCount" class="h3stat"></span></h3>
-      <div class="filters" id="shelfFilters">
-        <div><label>大区</label><select data-k="大区"><option value="">全部</option></select></div>
-        <div><label>地区（关键词搜索）</label><input data-kw="地区" placeholder="如 南京"></div>
-        <div><label>货架编码/货架ID（关键词搜索）</label><input data-kw="货架编码|货架ID" placeholder="编码或ID均可"></div>
-        <div><label>工单编号（关键词搜索）</label><input data-kw="工单编号" placeholder="输入工单编号"></div>
-        <div><label>是否已超时</label><select data-k="超时状态"><option value="">全部</option><option>已超时</option><option>即将超时</option><option>未超时</option></select></div>
-        <div><label>新装/留存</label><select data-k="新装/留存"><option value="">全部</option><option>新装</option><option>留存</option><option>-</option></select></div>
-        <div><label>客户等级（可多选）</label><select data-k="客户等级" class="lv-ms"><option value="">全部</option><option>S级</option><option>A级</option><option>B级</option><option>C级</option><option>D级</option><option>E级</option><option>无等级</option></select></div>
-        <div><label>威胁撤架/丢柜</label><select id="shelfRisk"><option value="">全部</option><option value="1">仅🚨威胁撤架/丢柜</option></select></div>
-        <button class="btn primary filter-submit" type="button" id="queryShelf">查询</button>
-        <button class="btn" id="resetShelf">重置</button>
-      </div>
-      <div class="scroll"><div id="riskTable"></div></div>
-    </div>
-  </section>
 
 
   
@@ -560,6 +540,9 @@ function networkdays(start, end){
   return cnt;
 }
 function classify(row){
+  const missing = v => v==null || ['','nan','none','null','undefined'].includes(String(v).trim().toLowerCase());
+  const region = missing(row['大区']) ? '工单无大区信息' : String(row['大区']).trim();
+  const district = missing(row['地区']) ? '工单无地区信息' : String(row['地区']).trim();
   const used = networkdays(row['创建时间'], TODAY) - 2;
   const sla = CLOSURE[row['工单分类三级']];
   let cd = null, st = '未超时';
@@ -567,7 +550,7 @@ function classify(row){
     cd = sla - used;                        // 闭环倒计时 = 标准 - 已处理
     st = cd<=0 ? '已超时' : cd<=2 ? '即将超时' : '未超时';
   }
-  return {...row, 已处理时长:used, 标准闭环时长:sla, 闭环倒计时:cd,
+  return {...row, 大区:region, 地区:district, 已处理时长:used, 标准闭环时长:sla, 闭环倒计时:cd,
           超时天数: cd===null ? null : -cd,   // 超时天数：正数=已超的工作日数
           超时状态:st,
           创建月份:`${row['创建时间'].getFullYear()}-${String(row['创建时间'].getMonth()+1).padStart(2,'0')}`};
@@ -576,8 +559,6 @@ let DATA = [];
 let handlerOT = {};   // 处理人 -> 全量已超时单量（用于明细排序）
 const MOBILE = window.matchMedia('(max-width:768px)').matches;   // 处理人 -> 全量已超时单量（用于明细排序）
 if(MOBILE){   // 手机端文案：未闭环 → 未完结（仅手机端生效）
-  const navV2b = document.querySelector('nav button[data-v="v2"] b');
-  if(navV2b) navV2b.textContent = '工单明细（未完结）';
   const thH3 = document.querySelector('#v1 .th-panel h3');
   if(thH3) thH3.innerHTML = thH3.innerHTML.replace('未闭环-超时积压处理人', '未完结-超时积压处理人');
 }
@@ -641,7 +622,6 @@ function initFilters(){
   document.getElementById('f1Region').innerHTML = '<option value="">全部大区</option>' + rgOpts;
   document.getElementById('pvRg').innerHTML = '<option value="">全部</option>' + rgOpts;
   document.getElementById('thRg').innerHTML = '<option value="">全部</option>' + rgOpts;
-  document.querySelector('#shelfFilters select[data-k="大区"]').innerHTML = '<option value="">全部</option>' + rgOpts;
   document.querySelector('#detailFilters select[data-k="大区"]').innerHTML = '<option value="">全部</option>' + rgOpts;
   document.querySelector('#detailFilters select[data-k="地区"]').innerHTML = '<option value="">全部</option>' + uniq('地区').map(o=>`<option>${o}</option>`).join('');
 }
@@ -760,7 +740,8 @@ function buildGroupedCards(rows, sortFn){
       const status = r['超时状态'] ?? '';
       const days = r['超时天数'];
       const reminders = Number(r['催单次数'])||0;
-      html += `<div class="shelf-issue" data-ticket-id="${escText(r['工单编号'])}"><div class="shelf-issue-meta"><div>工单编号：${escText(r['工单编号'])}</div><div>创建时间：${escText(fmtDT(r['创建时间']))}</div><div>${escText(r['大区'])} ${escText(r['地区'])} ｜ ${escText(r['新装/留存'])}</div><div>客户等级：<span class="lvl ${lvCls}">${escText(lv)}</span></div><div>工单状态：${escText(r['工单状态'])}${reminders>0?` ｜ 催单 ${reminders} 次`:''}</div></div><div><div class="shelf-issue-title">${escText(r['工单分类三级'])} <span class="tag ${tag(status)}">${escText(status)}</span>${Number(days)>0?`<span class="tag ot">超时 ${escText(days)} 天</span>`:''}</div><div class="shelf-issue-content">${escText(maskTel(r['工单内容']))}</div></div></div>`;
+      const risk = isRiskRow(r);
+      html += `<div class="shelf-issue" data-ticket-id="${escText(r['工单编号'])}"><div class="shelf-issue-meta"><div>工单编号：${escText(r['工单编号'])}</div><div>创建时间：${escText(fmtDT(r['创建时间']))}</div><div>${escText(r['大区'])} ${escText(r['地区'])} ｜ ${escText(r['新装/留存'])}</div><div>客户等级：<span class="lvl ${lvCls}">${escText(lv)}</span></div><div>工单状态：${escText(r['工单状态'])}${reminders>0?` ｜ 催单 ${reminders} 次`:''}</div></div><div><div class="shelf-issue-title">${risk?'<span class="risk-ico" title="威胁撤架/丢柜">🚨</span>':''}${escText(r['工单分类三级'])} <span class="tag ${tag(status)}">${escText(status)}</span>${Number(days)>0?`<span class="tag ot">超时 ${escText(days)} 天</span>`:''}</div><div class="shelf-issue-content">${escText(maskTel(r['工单内容']))}</div></div></div>`;
     });
     html += '</section>';
   });
@@ -1295,23 +1276,52 @@ const cmpOrder = (a,b)=> ((ST_RANK[a['超时状态']]??3)-(ST_RANK[b['超时状�
   || (b['创建时间']-a['创建时间'])
   || ((LV_RANK[b['客户等级']]||0)-(LV_RANK[a['客户等级']]||0))
   || ((XZ_RANK[a['新装/留存']]??2)-(XZ_RANK[b['新装/留存']]??2));
-function detailRows(){
+function detailBaseRows(){
   const sel = {};
-  document.querySelectorAll('#detailFilters select').forEach(s=>{ const v = selVals(s); if(v.length) sel[s.dataset.k]=v });
+  document.querySelectorAll('#detailFilters select').forEach(s=>{ if(!s.dataset.k) return; const v = selVals(s); if(v.length) sel[s.dataset.k]=v });
   const kw = {};
   document.querySelectorAll('#detailFilters input[data-kw]').forEach(i=>{ if(i.value.trim()) kw[i.dataset.kw]=i.value.trim() });
   let rows = DATA.filter(r=>Object.entries(sel).every(([k,v])=>v.includes(String(r[k]??''))));
-  rows = rows.filter(r=>Object.entries(kw).every(([k,v])=>k.split('|').some(f=>String(r[f]??'').includes(v))));   // data-kw支持"字段A|字段B"任一中
-  rows = [...rows].sort(cmpOrder);   // 已超时优先 → 创建时间倒序 → S→A级 → 新装优先
-  return rows;
+  return rows.filter(r=>Object.entries(kw).every(([k,v])=>k.split('|').some(f=>String(r[f]??'').includes(v))));   // data-kw支持"字段A|字段B"任一中
+}
+const detailShelfId = r => String(r['货架ID']??'').trim();
+function duplicateShelfRows(rows){
+  const counts = new Map();
+  rows.forEach(r=>{ const id=detailShelfId(r); if(id) counts.set(id,(counts.get(id)||0)+1); });
+  return rows.filter(r=>{ const id=detailShelfId(r); return id && (counts.get(id)||0)>=2; });
+}
+function riskShelfRows(rows){
+  const ids = new Set(rows.filter(isRiskRow).map(detailShelfId).filter(Boolean));
+  return rows.filter(r=>ids.has(detailShelfId(r)));
+}
+function detailRows(){
+  let rows = detailBaseRows();
+  if(document.getElementById('detailDuplicate').value==='1') rows = duplicateShelfRows(rows);
+  if(document.getElementById('detailRisk').value==='1') rows = riskShelfRows(rows);
+  return [...rows].sort(cmpOrder);   // 已超时优先 → 创建时间倒序 → S→A级 → 新装优先
+}
+function renderDetailRiskSummary(rows){
+  const expanded = riskShelfRows(rows);
+  const hits = expanded.filter(isRiskRow).length;
+  const button = document.getElementById('detailRiskDrill');
+  document.getElementById('detailRiskCount').textContent = hits;
+  document.getElementById('detailRiskNote').textContent = hits ? `同一货架ID下全部 ${expanded.length} 单合并展示，点击数字下钻明细` : '当前筛选范围无威胁撤架/丢柜工单';
+  button.disabled = hits===0;
+  button.setAttribute('aria-label', `威胁撤架/丢柜 ${hits} 单，点击下钻查看同货架全部 ${expanded.length} 单`);
 }
 function renderDetailTable(){
   const rows = detailRows();
   updateHeadOT(document.querySelector('#detailFilters select[data-k="大区"]').value);   // 右上角总超时工单与本页大区筛选联动
   const result = buildGroupedCards(rows, cmpOrder);
   document.getElementById('detailTable').innerHTML = result.html;
+  renderDetailRiskSummary(rows);
   document.getElementById('detailCount').textContent = `共 ${rows.length} 条（筛选后）／ 全部 ${DATA.length} 条 ｜ ${result.groupCount} 个「处理人＋货架ID」组合 ｜ 已超时＞即将超时＞未超时，组内按创建时间新→旧 ｜ 工单内容完整展示`;
 }
+document.getElementById('detailRiskDrill').addEventListener('click', ()=>{
+  const rows = riskShelfRows(detailRows());
+  const hits = rows.filter(isRiskRow).length;
+  showDrill(`🚨 威胁撤架/丢柜（${hits} 条风险工单 · 同货架共 ${rows.length} 单）`, rows, {groupByShelf:true});
+});
 document.querySelectorAll('#detailFilters select, #detailFilters input').forEach(el=>{
   el.addEventListener(el.tagName==='SELECT'?'change':'input', renderDetailTable);
 });
@@ -1321,94 +1331,6 @@ document.getElementById('resetV2').onclick = ()=>{
   renderDetailTable();
 };
 
-// 🏪 货架维度风险工单：地区→货架编码分组，同一货架所有问题归并；🚨=威胁撤架/丢柜；独立筛选器，点击行下钻
-const SHELF_COLS = ['地区','货架编码','货架ID','创建日期','工单分类三级','工单内容','工单编号','客户等级','新装/留存','催单次数','超时状态','超时天数'];
-// 各列默认宽(px)：合计超屏宽，保证底部横向滚动条；冻结首行+地区列
-const SHELF_COL_W = [90, 115, 105, 150, 140, 400, 135, 76, 76, 68, 84, 74];
-function shelfRows(){
-  const kw = {};
-  document.querySelectorAll('#shelfFilters input[data-kw]').forEach(i=>{ if(i.value.trim()) kw[i.dataset.kw]=i.value.trim() });
-  const sel = {};
-  document.querySelectorAll('#shelfFilters select').forEach(s=>{ if(!s.dataset.k) return; const v = selVals(s); if(v.length) sel[s.dataset.k]=v });
-  let rows = DATA.filter(r=>Object.entries(kw).every(([k,v])=>k.split('|').some(f=>String(r[f]??'').includes(v))));
-  rows = rows.filter(r=>Object.entries(sel).every(([k,v])=>v.includes(String(r[k]??''))));
-  if(document.getElementById('shelfRisk').value==='1') rows = rows.filter(isRiskRow);   // 仅威胁撤架/丢柜
-  return rows;
-}
-function renderShelfTable(){
-  const rows = shelfRows();
-  updateHeadOT(document.querySelector('#shelfFilters select[data-k="大区"]').value);   // 右上角总超时工单与本表大区筛选联动
-  const tag = s => s==='已超时'?'ot':(s==='未超时'?'ok':'soon');
-  // 分组：大区|地区 → 货架编码
-  const regions = {};
-  rows.forEach(r=>{
-    const rk = (r['大区']||'')+'|'+(r['地区']||'');
-    const sk = r['货架编码']||'(无编码)';
-    ((regions[rk]=regions[rk]||{})[sk]=((regions[rk][sk])||[])).push(r);
-  });
-  // 排序：统一按 已超时＞创建时间新→旧＞S→A级＞新装 优先级（地区、货架按组内最优先工单排序，组内同序）
-  const rgList = Object.entries(regions).map(([k,shelves])=>{
-    const all = Object.values(shelves).flat();
-    return {k, shelves, n: all.length, top: all.reduce((m,r)=>cmpOrder(m,r)<=0?m:r)};
-  }).sort((a,b)=>cmpOrder(a.top,b.top));
-  const flat = [];
-  let html = `<table><colgroup>${SHELF_COL_W.map(w=>`<col style="width:${w}px">`).join('')}</colgroup><thead><tr>${SHELF_COLS.map(c=>`<th>${c==='超时状态'?'是否超时':c==='工单分类三级'?'三级工单分类':c}</th>`).join('')}</tr></thead><tbody>`;
-  rgList.forEach(({k,shelves})=>{
-    const [rg,dt] = k.split('|');
-    const shList = Object.entries(shelves).map(([sk,arr])=>{
-      arr.sort(cmpOrder);
-      return {sk, arr};
-    }).sort((a,b)=>cmpOrder(a.arr[0],b.arr[0]));
-    const rgRows = shList.reduce((s,x)=>s+x.arr.length,0);
-    let rgFirst = true;
-    shList.forEach(({sk,arr})=>{
-      let shFirst = true;
-      arr.forEach((r,ai)=>{
-        const risk = isRiskRow(r);
-        const idx = flat.length; flat.push(r);
-        const last = ai===arr.length-1;
-        html += `<tr data-ri="${idx}" class="shelf-row${risk?' risk-hl':''}${last?' grp-end':''}">`;
-        if(rgFirst){ html += `<td rowspan="${rgRows}" class="rg-cell" style="font-weight:700;vertical-align:top;border-right:1px solid var(--line)">${dt}</td>`; rgFirst=false; }
-        if(shFirst){
-          html += `<td rowspan="${arr.length}" style="font-weight:700;vertical-align:top">${sk}</td>`;
-          html += `<td rowspan="${arr.length}" style="vertical-align:top">${r['货架ID']??''}</td>`;
-          shFirst=false;
-        }
-        html += `<td>${fmtDT(r['创建时间'])}</td>`;
-        html += `<td>${r['工单分类三级']??''}</td>`;
-        html += `<td class="risk-content">${risk?'<span class="risk-ico" title="威胁撤架/丢柜">🚨</span>':''}${maskTel(r['工单内容'])}</td>`;
-        html += `<td>${r['工单编号']??''}</td>`;
-        const lv = r['客户等级'], cls = lv==='S级'?'s':lv==='A级'?'a':lv==='B级'?'b':'y';
-        html += `<td class="num"><span class="lvl ${cls}">${lv??''}</span></td>`;
-        html += `<td>${r['新装/留存']??''}</td>`;
-        const cn = Number(r['催单次数'])||0;
-        html += `<td class="num">${cn>2?`<span class="lvl s">${r['催单次数']}</span>`:(r['催单次数']??'')}</td>`;
-        html += `<td><span class="tag ${tag(r['超时状态'])}">${r['超时状态']}</span></td>`;
-        html += `<td class="num ${r['超时天数']>0?'hot':''}">${r['超时天数']??''}</td>`;
-        html += '</tr>';
-      });
-    });
-  });
-  const shelfCnt = Object.values(regions).reduce((s,o)=>s+Object.keys(o).length,0);
-  const riskCnt = rows.filter(isRiskRow).length;
-  document.getElementById('riskTable').innerHTML = rows.length ? html+'</tbody></table>' : '<div style="padding:16px;color:#888;font-size:13px">当前筛选范围无工单</div>';
-  document.getElementById('riskCount').innerHTML = rows.length ? `共 ${rgList.length} 个地区 · ${shelfCnt} 个货架 · ${rows.length} 单（其中 <b style="color:#c62828">威胁撤架/丢柜 ${riskCnt} 单</b>，🚨标识）` : '';
-  document.querySelectorAll('#riskTable .shelf-row').forEach(el=>{
-    el.style.cursor='pointer';
-    el.onclick = ()=>{ const r = flat[Number(el.dataset.ri)]; showDrill(`${r['货架编码']||''} · ${r['工单编号']}（${r['大区']} ${r['地区']}）`, [r]); };
-  });
-}
-
-document.querySelectorAll('#shelfFilters select, #shelfFilters input').forEach(el=>{
-  el.addEventListener(el.tagName==='SELECT'?'change':'input', renderShelfTable);
-});
-document.getElementById('resetShelf').onclick = ()=>{
-  document.querySelectorAll('#shelfFilters select').forEach(resetSelect);
-  document.querySelectorAll('#shelfFilters input').forEach(x=>x.value='');
-  renderShelfTable();
-};
-
-function renderV3(){ renderShelfTable(); }
 function bindQueryConfirm(root, renderFn, buttonId){
   if(!root) return;
   root.querySelectorAll('input').forEach(input=>{
@@ -1430,14 +1352,12 @@ function bindQueryConfirm(root, renderFn, buttonId){
 bindQueryConfirm(document.getElementById('pvL2').closest('.filters'), renderV1Pivot, 'queryPivot');
 bindQueryConfirm(document.getElementById('thName').closest('.filters'), renderTopHandlers, 'queryTopHandlers');
 bindQueryConfirm(document.getElementById('detailFilters'), renderDetailTable, 'queryDetail');
-bindQueryConfirm(document.getElementById('shelfFilters'), renderShelfTable, 'queryShelf');
 bindQueryConfirm(document.getElementById('modalFilters'), renderModalRows, 'queryModal');
 function renderNavBadges(){
   document.getElementById('nbV1').textContent = DATA.filter(r=>r['超时状态']==='已超时').length;
   document.getElementById('nbV2').textContent = DATA.length;
-  document.getElementById('nbV3').textContent = DATA.filter(isRiskRow).length;
 }
-function renderAll(){ renderNavBadges(); renderV1(); renderDetailTable(); renderV3(); }
+function renderAll(){ renderNavBadges(); renderV1(); renderDetailTable(); }
 
 // ============ 导出 ============
 document.getElementById('btnExportDetail').addEventListener('click', ()=>{
@@ -1524,7 +1444,7 @@ document.querySelectorAll('nav button').forEach(b=>b.addEventListener('click', (
   b.classList.add('active');
   document.getElementById(b.dataset.v).classList.add('active');
   const v = b.dataset.v;
-  if(v==='v1') renderV1(); else if(v==='v2') renderDetailTable(); else if(v==='v3') renderV3(); else if(v==='v4'){
+  if(v==='v1') renderV1(); else if(v==='v2') renderDetailTable(); else if(v==='v4'){
     const cf=document.getElementById('closureFrame');
     if(cf&&!cf.dataset.loaded){ cf.src=cf.dataset.src; cf.dataset.loaded='1'; }
   }   // 切换页签时刷新视图并让右上角总超时数跟随该页大区筛选
