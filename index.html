@@ -541,6 +541,7 @@ td.tl-ot-r{color:#FF0000;font-weight:700}
       <h3>数据表2：超时天数 TOP15 ｜ 重复催办 ≥2 次<span class="hint-drill">（点击行可下钻查看工单明细）</span></h3>
       <div class="filters">
         <div><label>是否超时</label><select id="bd2Ot"><option value="">全部</option><option>超时闭环</option><option>超时未闭环</option><option>未超时闭环</option><option>未超时未闭环</option></select></div>
+        <div><label>工单状态</label><select id="bd2St"><option value="">全部</option><option>已完结</option><option selected>未完结</option></select></div>
         <div><label>大区</label><select id="bd2Rg"><option value="">全部</option></select></div>
         <div><label>地区</label><select id="bd2Dt"><option value="">全部</option></select></div>
         <div><label>创建时间从</label><input id="bd2From" type="date" value="2026-09-12"></div>
@@ -570,6 +571,7 @@ td.tl-ot-r{color:#FF0000;font-weight:700}
       <h3>数据表4：BD提报客诉跟进情况汇总表</h3>
       <div class="filters">
         <div><label>是否超时</label><select id="bd4Ot"><option value="">全部</option><option>超时闭环</option><option>超时未闭环</option><option>未超时闭环</option><option>未超时未闭环</option></select></div>
+        <div><label>工单状态</label><select id="bd4St"><option value="">全部</option><option>已完结</option><option selected>未完结</option></select></div>
         <div><label>大区</label><select id="bd4Rg"><option value="">全部</option></select></div>
         <div><label>地区</label><select id="bd4Dt"><option value="">全部</option></select></div>
         <div><label>创建时间从</label><input id="bd4From" type="date" value="2026-09-12"></div>
@@ -2401,7 +2403,11 @@ window.__BD__ = {"exportTime": "2026-11-12", "bdWindow": "创建时间 2026-10-0
 // ============ BD客诉看板 (v5) ============
 (function(){
 const BD = window.__BD__;
-if(!BD) return;
+if(!BD){
+  const v=document.getElementById('v5');
+  if(v) v.insertAdjacentHTML('afterbegin','<div style="padding:28px;text-align:center;color:#8a857c;font-size:14px">⚠️ 页面数据未加载完整，请按 Ctrl+F5 强制刷新重试</div>');
+  return;
+}
 const $ = id => document.getElementById(id);
 const esc = s => String(s==null?'':s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const num = v => (v==null||v===''||isNaN(+v)) ? null : +v;
@@ -2438,13 +2444,16 @@ function dateRange(fId,tId){
   const f=$(fId).value, t=$(tId).value;
   return r=>{ const d=day(r); return (!f||d>=f)&&(!t||d<=t); };
 }
+function stMatch(st){
+  return r=>!st||(st==='已完结'? !!r['完结时间'] : !r['完结时间']);
+}
 function f2rows(){
-  const ot=$('bd2Ot').value, rg=$('bd2Rg').value, dt=$('bd2Dt').value, inR=dateRange('bd2From','bd2To');
-  return BD.bdRows.filter(r=>(!ot||r['是否超时']===ot)&&(!rg||r['大区']===rg)&&(!dt||r['地区']===dt)&&inR(r));
+  const ot=$('bd2Ot').value, st=$('bd2St').value, rg=$('bd2Rg').value, dt=$('bd2Dt').value, inR=dateRange('bd2From','bd2To');
+  return BD.bdRows.filter(r=>(!ot||r['是否超时']===ot)&&stMatch(st)(r)&&(!rg||r['大区']===rg)&&(!dt||r['地区']===dt)&&inR(r));
 }
 function f4rows(){
-  const ot=$('bd4Ot').value, rg=$('bd4Rg').value, dt=$('bd4Dt').value, inR=dateRange('bd4From','bd4To');
-  return BD.bdRows.filter(r=>(!ot||r['是否超时']===ot)&&(!rg||r['大区']===rg)&&(!dt||r['地区']===dt)&&inR(r));
+  const ot=$('bd4Ot').value, st=$('bd4St').value, rg=$('bd4Rg').value, dt=$('bd4Dt').value, inR=dateRange('bd4From','bd4To');
+  return BD.bdRows.filter(r=>(!ot||r['是否超时']===ot)&&stMatch(st)(r)&&(!rg||r['大区']===rg)&&(!dt||r['地区']===dt)&&inR(r));
 }
 
 // ---------- 下钻弹窗 ----------
