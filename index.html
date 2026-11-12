@@ -402,7 +402,7 @@ td.tl-ot-r{color:#FF0000;font-weight:700}
 <div class="notice-bar">📌 <b>客诉工单3种处理方式</b>（<a id="openGuide">方式①附图点击查看</a>）：①【督导/店主】丰e管家APP-应用【工单宝】-跟进-转单（对象：客服）；②【中台运营】苍穹-市场-二线工作台-转单（对象：客服）；③【督导+运营】企微-工作台-客户运维-星汉工单宝-详情-跟进-转单（对象：客服）<br>📌 <b>星云-设备离线工单</b>：涉及新装费用纠纷拔电情况：地区转单给客服 → 客服反馈 CM/BDM 跟进；其余情况无需转单，设备恢复在线后，星云会自动关单 ｜ <span class="nb-warn">⚠ 休小长假、已提离职等，请相关负责人提前通知匡碧莹更改对接人，避免工单积压（点击打开链接：<a href="https://a4761219de4a5c465.app.workbuddy.host/?sharecode=MZ32J7BLCT" target="_blank" rel="noopener noreferrer" style="color:#174a9c;text-decoration:underline;text-underline-offset:3px">地区对接人速查</a>）</span></div>
 <nav>
   <button class="active" data-v="v1">📊 <b>超时大区分析（未完结）</b><span class="nav-badge" id="nbV1"></span></button>
-  <button data-v="v5">🛠️ <b>BD客诉看板</b><span class="nav-badge dark" id="nbV5"></span></button>
+  <button data-v="v5">🛠️ <b>BD客诉看板</b></button>
   <button data-v="v2">📋 <b>未处理工单（含威胁撤架/丢柜）</b><span class="nav-badge dark" id="nbV2"></span></button>
   <button data-v="v4">⏱️ <b>地区工单遵时闭环率</b>
 </button>
@@ -527,7 +527,7 @@ td.tl-ot-r{color:#FF0000;font-weight:700}
         <div><label>战区</label><select id="bdZq"><option value="">全部</option></select></div>
         <div><label>工单编号（关键词）</label><input id="bdNo" placeholder="输入工单编号"></div>
         <div><label>货架id（关键词）</label><input id="bdSid" placeholder="输入货架id"></div>
-        <div><label>工单状态</label><select id="bdSt"><option value="">全部</option><option>已完结</option><option>未完结</option></select></div>
+        <div><label>工单状态</label><select id="bdSt"><option value="">全部</option><option>已完结</option><option selected>未完结</option></select></div>
         <div><label>是否超时</label><select id="bdOt"><option value="">全部</option><option>超时闭环</option><option>超时未闭环</option><option>未超时闭环</option><option>未超时未闭环</option></select></div>
         <div><label>客户等级</label><select id="bdLv"><option value="">全部</option></select></div>
         <div><label>新装/留存</label><select id="bdXz"><option value="">全部</option><option>新装</option><option>留存</option><option>-</option></select></div>
@@ -538,13 +538,13 @@ td.tl-ot-r{color:#FF0000;font-weight:700}
     </div>
 
     <div class="panel">
-      <h3>数据表2：🔥 超时天数 TOP15 ｜ 重复催办 ≥2 次<span class="hint-drill">（点击行可下钻查看工单明细）</span></h3>
+      <h3>数据表2：超时天数 TOP15 ｜ 重复催办 ≥2 次<span class="hint-drill">（点击行可下钻查看工单明细）</span></h3>
       <div class="filters">
         <div><label>是否超时</label><select id="bd2Ot"><option value="">全部</option><option>超时闭环</option><option>超时未闭环</option><option>未超时闭环</option><option>未超时未闭环</option></select></div>
         <div><label>大区</label><select id="bd2Rg"><option value="">全部</option></select></div>
         <div><label>地区</label><select id="bd2Dt"><option value="">全部</option></select></div>
-        <div><label>创建时间从</label><input id="bd2From" type="date"></div>
-        <div><label>创建时间至</label><input id="bd2To" type="date"></div>
+        <div><label>创建时间从</label><input id="bd2From" type="date" value="2026-09-12"></div>
+        <div><label>创建时间至</label><input id="bd2To" type="date" value="2026-11-12"></div>
         <button class="btn primary filter-submit" type="button" id="bdQ2">查询</button>
       </div>
       <div class="duo">
@@ -572,8 +572,8 @@ td.tl-ot-r{color:#FF0000;font-weight:700}
         <div><label>是否超时</label><select id="bd4Ot"><option value="">全部</option><option>超时闭环</option><option>超时未闭环</option><option>未超时闭环</option><option>未超时未闭环</option></select></div>
         <div><label>大区</label><select id="bd4Rg"><option value="">全部</option></select></div>
         <div><label>地区</label><select id="bd4Dt"><option value="">全部</option></select></div>
-        <div><label>创建时间从</label><input id="bd4From" type="date"></div>
-        <div><label>创建时间至</label><input id="bd4To" type="date"></div>
+        <div><label>创建时间从</label><input id="bd4From" type="date" value="2026-09-12"></div>
+        <div><label>创建时间至</label><input id="bd4To" type="date" value="2026-11-12"></div>
         <button class="btn primary filter-submit" type="button" id="bdQ4">查询</button>
       </div>
       <div class="scroll" id="bdT4"></div>
