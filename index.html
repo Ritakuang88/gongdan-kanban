@@ -465,7 +465,7 @@ td.tl-ot-r{color:#FF0000;font-weight:700}
       <div id="topHandlers"></div>
     </div>
     <div class="panel">
-      <h3>🔥 超时天数 TOP10 ｜ 重复催办 ≥3 次<span class="hint-drill">（点击行可下钻查看工单明细）</span></h3>
+      <h3>⚠ 超时天数 TOP10 ｜ 重复催办 ≥3 次<span class="hint-drill">（点击行可下钻查看工单明细）</span></h3>
       <div class="filters">
         <div><label>来单渠道</label><select id="duoCh"><option value="">全部</option></select></div>
       </div>
@@ -562,6 +562,29 @@ td.tl-ot-r{color:#FF0000;font-weight:700}
       #v5 #bdT4 th,#v5 #bdT4 td{padding:6px 7px;text-align:center}
       #v5 #bdT4 th:first-child,#v5 #bdT4 td:first-child{text-align:left;width:210px;white-space:normal;overflow-wrap:anywhere}
       @media(max-width:900px){#v5 .bd-method-grid{grid-template-columns:1fr}#v5 .bd-t4-panel{max-width:100%}}
+      @media(max-width:768px){
+        #v5 .bd-method{display:none}
+        #v5 .duo>div{min-width:0}
+        #v5 .bd-detail-wrap{width:100%;max-width:100%;max-height:65vh;overflow:auto;-webkit-overflow-scrolling:touch}
+        #v5 .bd-detail-wrap table{table-layout:auto;width:max-content;min-width:620px}
+        #v5 .bd-detail-wrap colgroup{display:none}
+        #v5 .bd-detail-wrap th{position:sticky;top:0;z-index:3;background:#f5f7ff;color:#2f2a25}
+        #v5 .bd-detail-wrap th:first-child,#v5 .bd-detail-wrap td:first-child{position:sticky;left:0;z-index:2;background:#fff;box-shadow:1px 0 0 var(--line)}
+        #v5 .bd-detail-wrap th:first-child{z-index:4;background:#f5f7ff}
+        #v5 #bdDeep th:nth-child(5),#v5 #bdDeep td:nth-child(5),#v5 #bdDeep th:nth-child(6),#v5 #bdDeep td:nth-child(6),#v5 #bdDeep th:nth-child(7),#v5 #bdDeep td:nth-child(7),#v5 #bdDeep th:nth-child(8),#v5 #bdDeep td:nth-child(8),#v5 #bdDeep th:nth-child(9),#v5 #bdDeep td:nth-child(9),
+        #v5 #bdCui th:nth-child(6),#v5 #bdCui td:nth-child(6),#v5 #bdCui th:nth-child(7),#v5 #bdCui td:nth-child(7),#v5 #bdCui th:nth-child(8),#v5 #bdCui td:nth-child(8),#v5 #bdCui th:nth-child(9),#v5 #bdCui td:nth-child(9),#v5 #bdCui th:nth-child(10),#v5 #bdCui td:nth-child(10){display:none}
+        #v5 .t3-wrap{max-height:65vh;-webkit-overflow-scrolling:touch}
+        #v5 #bdT3 th{z-index:3;background:#f5f7ff;color:#2f2a25}
+        #v5 #bdT3 th:first-child,#v5 #bdT3 td:first-child{position:sticky;left:0;z-index:2;background:#fff;box-shadow:1px 0 0 var(--line)}
+        #v5 #bdT3 th:first-child{z-index:4;background:#f5f7ff}
+        #v5 #bdT4{max-height:65vh;overflow:auto;-webkit-overflow-scrolling:touch}
+        #v5 #bdT4 table{width:max-content;min-width:100%;table-layout:auto}
+        #v5 #bdT4 th{position:sticky;top:0;z-index:3;background:#f5f7ff;color:#2f2a25}
+        #v5 #bdT4 th:first-child,#v5 #bdT4 td:first-child{position:sticky;left:0;z-index:2;background:#fff;box-shadow:1px 0 0 var(--line);width:calc(6em + 16px);min-width:calc(6em + 16px);max-width:calc(6em + 16px)}
+        #v5 #bdT4 th:first-child{z-index:4;background:#f5f7ff}
+        #v5 #bdT4 .bd-t4-total td:first-child{background:#8a8a8a}
+        #v5 #bdT4 .bd-t4-rg:not(.bd-t4-key){display:none}
+      }
     </style>
     <div style="font-size:14px;color:#625d55;background:#faf9f6;border:1px solid #eceae4;border-radius:8px;padding:9px 12px;margin:0 0 10px;line-height:1.7">📌 数据：BD客诉看板（销售等级历史数据自2026年10月1日起提供；创建时间 <b>2026-09-01 ~ 2026-11-14</b>）｜ 报修中心（工单提交时间 2026-09-01 ~ 2026-11-12）｜ 遵时率 = 未超时单量 ÷ 客诉总量</div>
 
@@ -2897,12 +2920,12 @@ function renderBdT4(){
     topCatByRg[rg]=new Set(catKeys.filter(cat=>cell[cat+'||'+rg]>0)
       .sort((a,b)=>cell[b+'||'+rg]-cell[a+'||'+rg]||a.localeCompare(b,'zh')).slice(0,3));
   });
-  let h='<table><thead><tr><th>新问题分类描述</th><th>总计</th>'+rgKeys.map(k=>`<th>${esc(k)}</th>`).join('')+'</tr></thead><tbody>';
-  h+='<tr style="background:#8a8a8a;color:#fff;font-weight:700"><td>总计</td><td>'+t4Num(rows.length)+'</td>'+
-     rgKeys.map(k=>`<td>${t4Num(rgCnt[k],k,null,topRg.has(k))}</td>`).join('')+'</tr>';
+  let h='<table><thead><tr><th>新问题分类描述</th><th>总计</th>'+rgKeys.map(k=>`<th class="bd-t4-rg${topRg.has(k)?' bd-t4-key':''}">${esc(k)}</th>`).join('')+'</tr></thead><tbody>';
+  h+='<tr class="bd-t4-total" style="background:#8a8a8a;color:#fff;font-weight:700"><td>总计</td><td>'+t4Num(rows.length)+'</td>'+
+     rgKeys.map(k=>`<td class="bd-t4-rg${topRg.has(k)?' bd-t4-key':''}">${t4Num(rgCnt[k],k,null,topRg.has(k))}</td>`).join('')+'</tr>';
   catKeys.forEach(c=>{
     h+=`<tr><td style="font-weight:600">${esc(c)}</td><td style="font-weight:700">${t4Num(catCnt[c],null,c)}</td>`+
-       rgKeys.map(k=>`<td>${t4Num(cell[c+'||'+k]||0,k,c,topCatByRg[k].has(c))}</td>`).join('')+'</tr>';
+       rgKeys.map(k=>`<td class="bd-t4-rg${topRg.has(k)?' bd-t4-key':''}">${t4Num(cell[c+'||'+k]||0,k,c,topCatByRg[k].has(c))}</td>`).join('')+'</tr>';
   });
   h+='</tbody></table>';
   $('bdT4').innerHTML=h;
