@@ -653,6 +653,7 @@ td.tl-ot-r{color:#FF0000;font-weight:700}
       <div class="bd-table-note"><b>统计口径：</b>客诉范围限「故障、不制冷、断网、外观破损、客户催换架」五类。按相同货架ID，关联客诉创建时间前/后各31天内的报修工单，一单客诉可能存在对应多个维修工单，因此行数不等于客诉工单数。</div>
       <div class="filters">
         <div><label>维修工单状态</label><select id="bd3St"><option value="">全部</option></select></div>
+        <div><label>维修工单终止原因（关键词）</label><input id="bd3Term" placeholder="输入终止原因关键词"></div>
         <div><label>维修时效标签</label><select id="bd3Tag"><option value="">全部</option></select></div>
         <div><label>维修工单来源（可多选）</label>
           <div class="msel bd-ot-msel" id="bd3SourceWrap">
@@ -2839,9 +2840,11 @@ function t3Cell(r,k){
 function f3rows(){
   const st=$('bd3St').value, tag=$('bd3Tag').value, source=selectedOptions('bd3Source'), pre=$('bd3Pre').value,
         ot=selectedOptions('bd3Ot'), no=$('bd3No').value.trim(), sid=$('bd3Sid').value.trim(),
+        term=$('bd3Term').value.trim().toLowerCase(),
         rg=$('bd3Rg').value, dt=$('bd3Dt').value, inR=dateRange('bd3From','bd3To','客诉工单创建时间');
   return BD.repairRows.filter(r=>
     (!st||r['维修工单状态']===st)&&(!tag||r['维修时效标签']===tag)&&(!source.size||source.has('')||source.has(r['工单来源']))&&(!pre||r['客诉前已有维修单']===pre)&&otMatch(ot)(r)&&inR(r)&&
+    (!term||String(r['维修终止备注']||'').toLowerCase().includes(term))&&
     (!no||String(r['客诉工单编号']).includes(no)||String(r['维修工单编号']).includes(no))&&
     (!sid||String(r['货架id']).includes(sid)||String(r['货架编码']||'').includes(sid))&&
     (!rg||r['大区']===rg)&&(!dt||r['地区']===dt));
