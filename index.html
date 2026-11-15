@@ -2955,6 +2955,8 @@ window.__initBD=function(){
   document.addEventListener('keydown',e=>{ if(e.key==='Escape') $('bdMask').classList.remove('show'); });
   renderBdT1(); renderBdDuo(); renderBdT3(); renderBdT4();
 };
+// 线上文件较大时，用户可能在底部脚本加载前已切入 BD 页签；加载完成后主动补初始化。
+if(document.querySelector('nav button.active')?.dataset.v==='v5') window.__initBD();
 })();
 </script>
 
