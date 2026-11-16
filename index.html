@@ -2732,8 +2732,8 @@ function renderBdT1(){
   const rgKeys=Object.keys(byRg).sort((a,b)=>byRg[b].length-byRg[a].length);
   let h='<table><thead><tr><th>大区/地区</th><th>客诉总量</th>'+
         RATE_GROUPS.map(g=>`<th>${g[0]}遵时率</th>`).join('')+'</tr></thead><tbody>';
-  h+='<tr style="background:#8a8a8a;color:#fff;font-weight:700"><td>总计</td>'+
-     `<td><span class="drill" data-t1="__ALL__" style="color:#fff">${rows.length}</span></td>${t1RatesHtml(rows)}</tr>`;
+  h+='<tr style="background:#e2e6ef;color:#2f2a25;font-weight:700"><td>总计</td>'+
+     `<td><span class="drill" data-t1="__ALL__" style="color:#2f2a25">${rows.length}</span></td>${t1RatesHtml(rows)}</tr>`;
   T1_GROUPS=[{key:'__ALL__', rows}];
   rgKeys.forEach(rg=>{
     const rgRows=byRg[rg];
