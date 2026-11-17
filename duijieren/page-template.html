@@ -6,7 +6,8 @@
 <title>地区对接人速查</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{background:#eef0f4;font-family:"Microsoft YaHei","PingFang SC",sans-serif;color:#222;padding:28px 16px 60px}
+body{background:#eef0f4;font-family:"Microsoft YaHei","PingFang SC",sans-serif;color:#222;padding:28px 16px 60px;zoom:.9}
+@supports not (zoom:1){.wrap{transform:scale(.9);transform-origin:top center}}
 .wrap{max-width:1180px;margin:0 auto}
 h1{font-size:26px;font-weight:800;color:#15181d}
 .sub{color:#8a94a3;font-size:13px;margin-top:8px}
@@ -45,7 +46,8 @@ td{padding:10px 12px;border-bottom:1px solid #e8ecf2;white-space:nowrap}
 td.rg{font-weight:800;color:#222;background:#fafbfd}
 td .none{color:#b0b8c4}
 .w1{width:84px;min-width:84px;max-width:84px}
-.w2{width:96px;min-width:96px;max-width:96px}
+.w2{width:118px;min-width:118px;max-width:118px}
+.nc{display:inline-block;background:#eef3ff;color:#2b6de8;border-radius:4px;font-size:10.5px;font-weight:700;padding:0 4px;margin-left:3px}
 .clip{display:block;max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .clip4{display:block;max-width:56px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .cp{cursor:pointer;border-radius:5px}
@@ -73,7 +75,7 @@ td.rg.sl0{background:#fafbfd}
 .pcard .row{display:flex;margin-top:12px;font-size:14px}
 .pcard .row .lb{color:#8a94a3;width:90px;flex:none}
 .pcard .row .vl{font-weight:800}
-.foot{color:#9aa4b2;font-size:12px;margin-top:26px;line-height:1.9}
+.foot{color:#9aa4b3;font-size:12px;margin-top:26px;line-height:1.9}
 .toast{position:fixed;left:50%;bottom:36px;transform:translateX(-50%);background:#333;color:#fff;border-radius:8px;padding:10px 20px;font-size:14px;display:none;z-index:99;max-width:80vw}
 </style>
 </head>
@@ -124,6 +126,7 @@ function copyText(t){
   if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t).then(done).catch(fallback);}else fallback();
 }
 function cleanName(v){return v? v.replace(/（.*?）$/,'').trim():v;}
+function fmtArea(a){return esc(a).replace(/（新城）$/,'<span class="nc">新城</span>');}
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 function fmtCell(v){return v?esc(v).replace(/\n+/g,'、'):'';}
 function tit(v){return v?esc(v).replace(/"/g,'&quot;'):'';}
@@ -222,11 +225,16 @@ function renderNotes(){
 function rowsFiltered(){
   return DATA.rows.filter(r=>(!curRegion||r.region===curRegion)&&(!curAreaFilter||curAreaFilter.includes(r.area)));
 }
+// 搜索/点选出结果后自动滚到结果位置，不用再手动下拉
+function scrollToResult(){
+  const el=(curPerson||curResult)?$('pcard'):((curRole||curAreaFilter||curRegion)?$('cap'):null);
+  if(el)setTimeout(()=>el.scrollIntoView({block:'start'}),60);
+}
 function render(){
   $('pcard').style.display='none';
   renderNotes();
-  if(curPerson){renderPerson();$('cap').textContent='';$('tbl').innerHTML='';$('tbl').className='';$('tscroll').style.display='none';return;}
-  if(curResult){renderResult();return;}
+  if(curPerson){renderPerson();$('cap').textContent='';$('tbl').innerHTML='';$('tbl').className='';$('tscroll').style.display='none';scrollToResult();return;}
+  if(curResult){renderResult();scrollToResult();return;}
   $('tscroll').style.display='';
   const rows=rowsFiltered();
   if(curRole==='AI群内管家账号'){
@@ -246,14 +254,14 @@ function render(){
     const marks=[];let lastRg=null;
     rows.forEach((r,i)=>{if(r.region!==lastRg){marks.push([i,1]);lastRg=r.region;}else{marks[marks.length-1][1]++;}});
     let mi=0;
-    rows.forEach((r,i)=>{h+='<tr>';if(mi<marks.length&&marks[mi][0]===i){h+='<td class="rg w1 sl0" rowspan="'+marks[mi][1]+'">'+esc(r.region)+'</td>';mi++;}h+='<td class="wa sl1 slE"><b>'+esc(r.area)+'</b></td><td>'+clip(r.roles[curRole])+'</td></tr>';});
+    rows.forEach((r,i)=>{h+='<tr>';if(mi<marks.length&&marks[mi][0]===i){h+='<td class="rg w1 sl0" rowspan="'+marks[mi][1]+'">'+esc(r.region)+'</td>';mi++;}h+='<td class="wa sl1 slE"><b>'+fmtArea(r.area)+'</b></td><td>'+clip(r.roles[curRole])+'</td></tr>';});
     $('tbl').innerHTML=h+'</tbody>';
   }else if(curRole){
     $('cap').textContent=curRole+' · '+(curRegion||'全部大区')+' · '+rows.length+' 个片区 · 单击人名可复制';
     $('tbl').className='';
     let h='<thead><tr><th class="wa sl0 slE">地区</th><th class="wb">'+curRole+'</th><th>职位</th></tr></thead><tbody>';
     notesNow().forEach(n=>{h+='<tr class="nrow"><td class="wa sl0 slE">📝 备注</td><td colspan="2">'+esc(n.text)+'</td></tr>';});
-    rows.forEach(r=>{const v=r.roles[curRole];const p=cleanName(v);h+='<tr><td class="wa sl0 slE"><b>'+esc(r.area)+'</b></td><td>'+clip(v,NARROW[curRole]?'clip4':'clip')+'</td><td>'+esc((p&&DATA.positions[p])||'')+'</td></tr>';});
+    rows.forEach(r=>{const v=r.roles[curRole];const p=cleanName(v);h+='<tr><td class="wa sl0 slE"><b>'+fmtArea(r.area)+'</b></td><td>'+clip(v,NARROW[curRole]?'clip4':'clip')+'</td><td>'+esc((p&&DATA.positions[p])||'')+'</td></tr>';});
     $('tbl').innerHTML=h+'</tbody>';
   }else{
     $('cap').textContent=(curRegion||'全部大区')+' · '+rows.length+' 个片区 × '+DATA.roles.length+' 类接口人（左右滑动查看；单击任意人名/账号即可复制）';
@@ -265,12 +273,13 @@ function render(){
     rows.forEach((r,i)=>{
       h+='<tr>';
       if(mi<marks.length&&marks[mi][0]===i){h+='<td class="rg w1 sl0" rowspan="'+marks[mi][1]+'">'+esc(r.region)+'</td>';mi++;}
-      h+='<td class="w2 sl1 slE"><b>'+esc(r.area)+'</b></td>';
+      h+='<td class="w2 sl1 slE"><b>'+fmtArea(r.area)+'</b></td>';
       DATA.roles.forEach(ro=>{const v=r.roles[ro];h+='<td>'+clip(v,NARROW[ro]?'clip4':'clip')+'</td>';});
       h+='</tr>';
     });
     $('tbl').innerHTML=h+'</tbody>';
   }
+  scrollToResult();
 }
 function renderResult(){
   $('tscroll').style.display='none';
@@ -298,7 +307,7 @@ function onSearch(){
   const q=$('q').value.trim();
   $('clr').style.display=q?'block':'none';
   curPerson=null;curAreaFilter=null;curResult=null;
-  if(!q){hideSugs();renderRegionTabs();render();return;}
+  if(!q){hideSugs();window.scrollTo(0,0);renderRegionTabs();render();return;}
   renderSugs();
   // 1) 人名 / 管家账号匹配
   const names=Object.keys(PINDEX);
