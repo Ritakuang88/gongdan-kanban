@@ -412,7 +412,7 @@ td.tl-ot-r{color:#FF0000;font-weight:700}
 <main>
   <div id="emptyTip" class="empty"><div class="big">📊</div>请上传由「工单看板处理 skill」清洗后的 Excel 文件<br><span class="file-note">需包含 工单明细 / 假期剔除 / 闭环时长 三个工作表</span></div>
 
-  <section id="v1" class="view active"><div style="font-size:12px;color:#8a857c;background:#faf9f6;border:1px solid #eceae4;border-radius:8px;padding:8px 12px;margin:0 0 10px;line-height:1.6">📌 口径：本板块为导出当天全量未完结升级工单，<b>不限创建月份</b>；是否超时按统计截止日期（导出当天）判定。</div>
+  <section id="v1" class="view active">
     <div class="panel">
       <div class="filters">
         <div><label>大区（联动下方结论、卡片与右上角指标）</label><select id="f1Region"><option value="">全部大区</option></select></div>
@@ -1949,7 +1949,7 @@ function loadEmbedded(){
   handlerOT = {};
   DATA.filter(r=>r['超时状态']==='已超时').forEach(r=>handlerOT[r['处理人']]=(handlerOT[r['处理人']]||0)+1);
   document.getElementById('metaInfo').textContent =
-    `数据来源：内置数据（${EMBEDDED.exportTime||''}导出）· 口径基准日：${fmtD(TODAY)} ｜ 未闭环 ${DATA.length} 单 ｜ 超时按打开当天自动重算`;
+    `数据来源：内置数据（${EMBEDDED.exportTime||''}导出）· 口径基准日：${fmtD(TODAY)} ｜ 未闭环 ${DATA.length} 单`;
   document.getElementById('emptyTip').style.display='none';
   document.getElementById('btnExportDetail').disabled = false;
   document.getElementById('btnExportAll').disabled = false;
