@@ -1,12 +1,13 @@
 # 地区对接人速查 · 同步脚本与迁移说明
 
 本目录三个文件：
-- `index.html`：公网页面（Render 静态托管自动部署），数据内嵌的静态快照；
+- `index.html`：公网页面（Render 静态托管自动部署），静态快照模板（数据在 data.json / rows-*.json）；
 - `sync.py`：一键同步脚本（读企微智能表 → 清洗 → 生成 index.html → 隐私自检）；
 - `README-sync.md`：本说明。
 
 ## 关键信息
 - 公网地址：https://gongdan-kanban.onrender.com/duijieren/
+- 页面结构：index.html 只含模板，运行时 fetch `data.json`（meta/角色/职位/备注，含 `meta.n_chunks`）+ `rows-1..N.json`（按大区分块的片区数据）合并渲染；sync.py 自动生成这些文件；
 - 数据源：企微智能表格【地区对接人名单】（docid 写在 sync.py 内），子表「对接人名单-一维表」「人员职位」；
 - 触发语：对 Kimi 说「更新对接人」= 按本说明跑 sync.py 并推送；
 - 页面只含 姓名/职位/大区/片区/角色/临时备注；sync.py 自检会扫描手机号/银行卡/内部ID 残留，不通过则退出码 1、禁止推送。
@@ -16,7 +17,7 @@
 2. 克隆本仓库（git 根目录即本 portal 目录）；GitHub 走 SSH（ssh.github.com:443 通道），本机 HTTPS 直连会超时。
 3. 推送凭证在新机器上重新配置：新建 SSH key 或到 github.com 新建 PAT；旧电脑凭证随旧机报废、应视为失效。
 4. 在仓库的 `duijieren/` 目录内直接运行 `python sync.py`（脚本把 data.json / index.html 生成在自己所在目录）；若提示「智能表自上次同步后无变化」则无需推送。
-5. 推送：`git add index.html && git commit && git push`；Render 约 1 分钟自动部署完成。
+5. 推送：`git add index.html data.json rows-*.json && git commit && git push`；Render 约 1 分钟自动部署完成。没有本地 git 凭证时，可让 Kimi 走 GitHub 插件逐个文件推送（单文件须控制在约 20KB 内，这正是数据分块的原因）。
 6. 验证：浏览器打开公网地址（Ctrl+F5 强刷），核对顶部「数据 …… 同步」时间为本次。
 
 ## 坑位备忘
@@ -32,3 +33,4 @@
 
 ## 迁移记录
 - 2026-11-17：从千问办公平台迁移至 Kimi Work。`sync.py` 的取数方式由「连接器 shim（QWORK_SHIM_ROUTE=wecom-cli）」改为直接调用 `npx -y @wecom/cli@1.3.4`，并新增子表分页拉取；页面文案「千问办公」改为「Kimi」。已用新链路完成一次全量同步验证（8 大区 / 85 片区 / 21 角色 / 职位表 190 人，隐私自检通过）。
+- 2026-11-17：页面改为「模板 + 数据分离」：index.html 不再内嵌数据，改为 fetch `data.json` 与 `rows-1..5.json`（按 ROW_GROUPS 大区分块）。原因：无本地 git 凭证时需走 GitHub API 推送，单文件内嵌全量数据超过可稳定推送的体积上限；分块后每个文件可独立增量更新。校验方式：合并远端各分块后与本地 data.json 逐键比对。
