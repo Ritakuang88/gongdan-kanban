@@ -315,22 +315,10 @@ function renderPerson(){
   if(regions.length===1){const rg=regions[0];const all=DATA.rows.filter(r=>r.region===rg).every(r=>e.areas.includes(r.area+'('+rg+')'));cover=all?'全'+rg:fmtCover(e.areas);}
   else cover=fmtCover(e.areas);
   const pos=DATA.positions[p]||'';
-  let h='<div class="pn">'+esc(p)+(pos?' （'+esc(pos)+'）':'')+'： '+e.roles.map(esc).join('、 ')+'<button class="copybtn" id="cpP">📋 复制姓名</button></div><div class="row"><span class="lb">覆盖范围</span><span class="vl">'+esc(cover)+'</span></div>';
-  // 该人名下的条目按角色聚合：一个角色一张卡，覆盖范围列出全部片区
-  const pairs=[];
-  DATA.rows.forEach(r=>{DATA.roles.forEach(ro=>{const v=r.roles[ro];if(!v)return;if(cleanName(v)===p||accountLines(v).includes(p))pairs.push({area:r.area,region:r.region,role:ro,value:v});});});
-  const byRole={},roleOrder=[];
-  pairs.forEach(x=>{if(!byRole[x.role]){byRole[x.role]={regions:[],areas:[]};roleOrder.push(x.role);}const g=byRole[x.role];if(!g.regions.includes(x.region))g.regions.push(x.region);g.areas.push(x.area+'('+x.region+')');});
-  roleOrder.forEach(ro=>{
-    const g=byRole[ro];
-    let cover;
-    if(g.regions.length===1){const rg=g.regions[0];const all=DATA.rows.filter(r=>r.region===rg).every(r=>g.areas.includes(r.area+'('+rg+')'));cover=all?'全'+rg:fmtCover(g.areas);}
-    else cover=fmtCover(g.areas);
-    h+='<div class="rcard"><div class="rh">'+esc(ro)+' <span class="chip2">'+esc(g.regions.join('、'))+'</span></div><div class="rbox"><div class="rl">✅ 覆盖范围：'+esc(cover)+'</div><div class="rn">'+esc(p)+(pos?' <span class="rp">（'+esc(pos)+'）</span>':'')+'<button class="copybtn" data-cp="'+tit(p)+'">📋 复制</button></div></div></div>';
-  });
+  // 单个汇总卡：角色标题 + 覆盖范围 + 姓名/职位 + 复制，不再按角色拆分多张卡
+  let h='<div class="rcard"><div class="rh">'+e.roles.map(esc).join('、')+' <span class="chip2">'+esc(regions.join('、'))+'</span></div><div class="rbox"><div class="rl">✅ 覆盖范围：'+esc(cover)+'</div><div class="rn">'+esc(p)+(pos?' <span class="rp">（'+esc(pos)+'）</span>':'')+'<button class="copybtn" data-cp="'+tit(p)+'">📋 复制</button></div></div></div>';
   $('pcard').innerHTML=h;
   $('pcard').style.display='block';
-  $('cpP').onclick=()=>copyText(p);
   $('pcard').querySelectorAll('.copybtn[data-cp]').forEach(b=>b.onclick=()=>copyText(cleanName(b.dataset.cp)));
 }
 // 输入过程只更新建议下拉，不跳动页面；回车（commitSearch）才执行并跳转
