@@ -24,9 +24,9 @@ ROLES = [
     ("商品效期接口人", "商品效期接口人", ["效期"]),
     ("货损接口人", "货损接口人", ["货损"]),
     ("设备运维接口人", "设备运维接口人", ["设备", "运维"]),
-    ("物流接口人（搬迁/换架→物流接口人）", "物流接口人（搬迁换架）", ["物流", "搬迁", "换架"]),
+    ("物流接口人（搬迁/换架→物流接口人）", "物流接口人（搬迁换架催审）", ["物流", "搬迁", "换架", "催审"]),
     ("清洁客诉-新装（激活后两周内）反馈物流接口人", "清洁新装（激活两周内由司机清洁）", ["清洁新装", "新装"]),
-    ("清洁客诉（留存）", "清洁留存", ["清洁留存", "留存"]),
+    ("清洁客诉（留存）", "清洁留存（店主）", ["清洁留存", "留存", "店主"]),
     ("商品质量接口人", "商品质量接口人", ["质量"]),
     ("挪点商机申报", "挪点商机", ["挪点"]),
     ("企业福利接口人", "企业福利", ["福利"]),
@@ -37,12 +37,13 @@ ROLES = [
     ("管家账号（非AI群）", "管家账号（非AI群）", ["管家账号"]),
 ]
 
-WECLI = r"C:\Users\E019451\.qwenworkcn\bin\ext\cli-common-shim-windows-amd64.exe"
+# Kimi Work 企微插件：固定版本 npx 调用，无需 shim
+WECOM_PKG = "@wecom/cli@1.3.4"
 
 def run_cli(args):
-    env = os.environ.copy()
-    env["QWORK_SHIM_ROUTE"] = "wecom-cli"
-    p = subprocess.run([WECLI] + args, capture_output=True, text=True, encoding="utf-8", errors="replace", env=env)
+    # Windows 下 npx 是 .cmd 包装，须 shell=True 才能解析
+    p = subprocess.run(["npx", "-y", WECOM_PKG] + args, capture_output=True,
+                       text=True, encoding="utf-8", errors="replace", shell=True)
     if p.returncode != 0:
         raise RuntimeError("wecom-cli 失败: " + p.stderr[:500])
     m = re.search(r"\{.*\}", p.stdout, re.S)
@@ -52,6 +53,23 @@ def run_cli(args):
     if d.get("errcode") not in (0, None):
         raise RuntimeError(f"errcode={d.get('errcode')} errmsg={d.get('errmsg')}")
     return d
+
+def list_records(sheet_title, limit):
+    """分页拉取整个子表，直到 has_more 为 False"""
+    recs, cursor = [], None
+    while True:
+        payload = {"docid": DOCID, "sheet_title": sheet_title, "limit": limit}
+        if cursor:
+            payload["cursor"] = cursor
+        d = run_cli(["smartsheet", "records", "list", "--json",
+                     json.dumps(payload, ensure_ascii=False)])
+        recs.extend(d.get("records", []))
+        if not d.get("has_more"):
+            break
+        cursor = d.get("next_cursor")
+        if not cursor:
+            break
+    return recs
 
 def cell(values, field):
     v = values.get(field)
@@ -70,18 +88,16 @@ def clean_person(name):
     return re.sub(r"（.*?）$", "", name.strip()).strip()
 
 def fetch_and_clean():
-    dm = run_cli(["smartsheet", "records", "list", "--json",
-                  json.dumps({"docid": DOCID, "sheet_title": SHEET_MAIN, "limit": 100}, ensure_ascii=False)])
-    dp = run_cli(["smartsheet", "records", "list", "--json",
-                  json.dumps({"docid": DOCID, "sheet_title": SHEET_POS, "limit": 500}, ensure_ascii=False)])
+    main_recs = list_records(SHEET_MAIN, 200)   # 列多，limit*列数须 <10000
+    pos_recs = list_records(SHEET_POS, 1000)
     positions = {}
-    for r in dp.get("records", []):
+    for r in pos_recs:
         n = cell(r["values"], "姓名")
         t = cell(r["values"], "职位")
         if n:
             positions[n.strip()] = t or ""
     rows, notes = [], []
-    for r in dm.get("records", []):
+    for r in main_recs:
         v = r["values"]
         region, area = cell(v, "大区"), cell(v, "地区")
         if not region or not area:
@@ -195,7 +211,7 @@ td.rg.sl0{background:#fafbfd}
 <div class="pcard" id="pcard" style="display:none"></div>
 <div class="cap" id="cap"></div>
 <div class="tscroll" id="tscroll"><table id="tbl"></table></div>
-<div class="foot">数据来源：企微智能表格 [地区对接人名单]（静态快照，同步时间见顶部）· 名单更新后由维护者在千问办公说「更新对接人」重新生成并发布<br>[找责任督导] / [责任督导] / [督导] 表示该片区未指定专人。</div>
+<div class="foot">数据来源：企微智能表格 [地区对接人名单]（静态快照，同步时间见顶部）· 名单更新后由维护者在 Kimi 说「更新对接人」重新生成并发布<br>[找责任督导] / [责任督导] / [督导] 表示该片区未指定专人。</div>
 </div>
 <div class="toast" id="toast"></div>
 <script>
@@ -230,7 +246,7 @@ function renderRegionTabs(){
   $('regionTabs').innerHTML=h;
   $('regionTabs').querySelectorAll('[data-r]').forEach(b=>b.onclick=()=>{curRegion=b.dataset.r||null;curAreaFilter=null;curPerson=null;curResult=null;renderRegionTabs();render();});
   $('btnReset').onclick=()=>{curRegion=null;curRole=null;curAreaFilter=null;curPerson=null;curResult=null;$('q').value='';$('clr').style.display='none';renderRegionTabs();renderRoleTabs();render();};
-  $('btnRefresh').onclick=()=>toast('本页为静态快照（同步于 '+DATA.meta.synced_at+'）。名单更新后，请维护者在千问办公说「更新对接人」重新生成发布。');
+  $('btnRefresh').onclick=()=>toast('本页为静态快照（同步于 '+DATA.meta.synced_at+'）。名单更新后，请维护者在 Kimi 说「更新对接人」重新生成发布。');
 }
 function renderRoleTabs(){
   let h='';
