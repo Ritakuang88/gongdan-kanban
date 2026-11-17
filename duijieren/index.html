@@ -81,7 +81,162 @@ td.rg.sl0{background:#fafbfd}
 </div>
 <div class="toast" id="toast"></div>
 <script>
-const DATA = {"meta":{"synced_at":"2026-11-17 11:36","source":"企微智能表格 [地区对接人名单]","n_regions":8,"n_areas":85,"n_roles":21}};
+let DATA = null;
+async function boot(){
+  const r = await fetch('data.json', {cache:'no-store'});
+  DATA = await r.json();
+  init();
+}
+let curRegion = null, curRole = null, curAreaFilter = null, curPerson = null, curResult = null;
+const $ = id => document.getElementById(id);
+function toast(msg){const t=$('toast');t.textContent=msg;t.style.display='block';clearTimeout(t._h);t._h=setTimeout(()=>t.style.display='none',3500);}
+function cleanName(v){return v? v.replace(/（.*?）$/,'').trim():v;}
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function fmt(v){return v?esc(v).replace(/\n/g,'<br>'):'';}
+function fmtCell(v){return v?esc(v).replace(/\n+/g,'、'):'';}
+function tit(v){return v?esc(v).replace(/"/g,'&quot;'):'';}
+function clip(v,cls){cls=cls||'clip';return v?'<div class="'+cls+'" title="'+tit(v)+'">'+fmtCell(v)+'</div>':'<div class="'+cls+'"><span class="none">—</span></div>';}
+const NARROW={'合同接口人':1,'结算接口人':1,'费用修改':1};
+const SPEC={'AI群内管家账号':['AI管家','AI群内'],'管家账号（非AI群）':['管家账号','非AI管家']};
+function accountLines(v){return v? v.split(/\n+/).map(s=>s.trim()).filter(Boolean):[];}
+let PINDEX={};
+function addP(n,ro,r){if(!n)return;const e=PINDEX[n]||(PINDEX[n]={roles:[],areas:[]});if(!e.roles.includes(ro))e.roles.push(ro);const a=r.area+'('+r.region+')';if(!e.areas.includes(a))e.areas.push(a);}
+function buildIndex(){PINDEX={};DATA.rows.forEach(r=>{DATA.roles.forEach(ro=>{const v=r.roles[ro];if(!v)return;addP(cleanName(v),ro,r);accountLines(v).forEach(l=>addP(l,ro,r));});});}
+function init(){
+  $('sub').textContent = DATA.meta.n_regions+' 大区 '+DATA.meta.n_areas+' 片区 · '+DATA.meta.n_roles+' 类接口人 · 数据 '+DATA.meta.synced_at+' 同步';
+  buildIndex();
+  renderRegionTabs(); renderRoleTabs(); renderNotes(); render();
+  $('q').addEventListener('input', onSearch);
+  $('clr').addEventListener('click', ()=>{$('q').value='';onSearch();});
+}
+function renderRegionTabs(){
+  let h='<button class="tab'+(curRegion?'':' on')+'" data-r="">全部大区</button>';
+  DATA.region_order.forEach(r=>{h+='<button class="tab'+(curRegion===r?' on':'')+'" data-r="'+r+'">'+r+'</button>';});
+  h+='<button class="tab reset" id="btnReset">↺ 重置</button>';
+  h+='<button class="tab refresh" id="btnRefresh">🔄 刷新数据</button>';
+  $('regionTabs').innerHTML=h;
+  $('regionTabs').querySelectorAll('[data-r]').forEach(b=>b.onclick=()=>{curRegion=b.dataset.r||null;curAreaFilter=null;curPerson=null;curResult=null;renderRegionTabs();render();});
+  $('btnReset').onclick=()=>{curRegion=null;curRole=null;curAreaFilter=null;curPerson=null;curResult=null;$('q').value='';$('clr').style.display='none';renderRegionTabs();renderRoleTabs();render();};
+  $('btnRefresh').onclick=()=>toast('本页为静态快照（同步于 '+DATA.meta.synced_at+'）。名单更新后，请维护者在 Kimi 说「更新对接人」重新生成发布。');
+}
+function renderRoleTabs(){
+  let h='';
+  DATA.roles.forEach(r=>{h+='<button class="tab'+(curRole===r?' on':'')+'" data-o="'+r+'">'+r+'</button>';});
+  $('roleTabs').innerHTML=h;
+  $('roleTabs').querySelectorAll('[data-o]').forEach(b=>b.onclick=()=>{curRole=(curRole===b.dataset.o?null:b.dataset.o);curPerson=null;curResult=null;renderRoleTabs();render();});
+}
+function notesNow(){return DATA.notes.filter(n=>!curRegion||n.region===curRegion);}
+function renderNotes(){
+  const ns=notesNow();
+  if(!ns.length){$('notes').style.display='none';return;}
+  let h='<div class="nt">📌 临时备注 · 重要提醒（'+ns.length+' 条）</div>';
+  ns.forEach(n=>{h+='<div class="ni"><span class="tag">'+n.region.replace('大区','')+'・'+n.area+'</span>'+n.text+'</div>';});
+  $('notes').innerHTML=h;$('notes').style.display=(!curRole&&!curPerson&&!curResult)?'block':'none';
+}
+function rowsFiltered(){
+  return DATA.rows.filter(r=>(!curRegion||r.region===curRegion)&&(!curAreaFilter||curAreaFilter.includes(r.area)));
+}
+function render(){
+  $('pcard').style.display='none';
+  renderNotes();
+  if(curPerson){renderPerson();$('cap').textContent='';$('tbl').innerHTML='';$('tbl').className='';$('tscroll').style.display='none';return;}
+  if(curResult){renderResult();return;}
+  $('tscroll').style.display='';
+  const rows=rowsFiltered();
+  if(curRole==='AI群内管家账号'){
+    const regs=curRegion?[curRegion]:DATA.region_order;
+    const pairs=regs.map(rg=>[rg,[...new Set(DATA.rows.filter(r=>r.region===rg).map(r=>r.roles[curRole]).filter(Boolean))]]).filter(p=>p[1].length);
+    $('cap').textContent=curRole+' · '+pairs.length+' 个大区（每大区一个AI群管家账号）';
+    $('tbl').className='';
+    let h='<thead><tr><th class="wa sl0 slE">大区</th><th>'+curRole+'</th></tr></thead><tbody>';
+    notesNow().forEach(n=>{h+='<tr class="nrow"><td class="wa sl0 slE">📝 备注</td><td>'+esc(n.text)+'</td></tr>';});
+    pairs.forEach(p=>{h+='<tr><td class="rg wa sl0 slE">'+esc(p[0])+'</td><td>'+clip(p[1].join('\n'))+'</td></tr>';});
+    $('tbl').innerHTML=h+'</tbody>';
+  }else if(curRole==='管家账号（非AI群）'){
+    $('cap').textContent=curRole+' · '+(curRegion||'全部大区')+' · '+rows.length+' 个片区（表头与首列已冻结）';
+    $('tbl').className='';
+    let h='<thead><tr><th class="w1 sl0">大区</th><th class="wa sl1 slE">地区</th><th>'+curRole+'</th></tr></thead><tbody>';
+    notesNow().forEach(n=>{h+='<tr class="nrow"><td class="w1 sl0">📝 备注</td><td class="wa sl1 slE" colspan="2">'+esc(n.text)+'</td></tr>';});
+    const marks=[];let lastRg=null;
+    rows.forEach((r,i)=>{if(r.region!==lastRg){marks.push([i,1]);lastRg=r.region;}else{marks[marks.length-1][1]++;}});
+    let mi=0;
+    rows.forEach((r,i)=>{h+='<tr>';if(mi<marks.length&&marks[mi][0]===i){h+='<td class="rg w1 sl0" rowspan="'+marks[mi][1]+'">'+esc(r.region)+'</td>';mi++;}h+='<td class="wa sl1 slE"><b>'+esc(r.area)+'</b></td><td>'+clip(r.roles[curRole])+'</td></tr>';});
+    $('tbl').innerHTML=h+'</tbody>';
+  }else if(curRole){
+    $('cap').textContent=curRole+' · '+(curRegion||'全部大区')+' · '+rows.length+' 个片区（表头与首列已冻结）';
+    $('tbl').className='';
+    let h='<thead><tr><th class="wa sl0 slE">地区</th><th class="wb">'+curRole+'</th><th>职位</th></tr></thead><tbody>';
+    notesNow().forEach(n=>{h+='<tr class="nrow"><td class="wa sl0 slE">📝 备注</td><td colspan="2">'+esc(n.text)+'</td></tr>';});
+    rows.forEach(r=>{const v=r.roles[curRole];const p=cleanName(v);h+='<tr><td class="wa sl0 slE"><b>'+esc(r.area)+'</b></td><td>'+clip(v,NARROW[curRole]?'clip4':'clip')+'</td><td>'+esc((p&&DATA.positions[p])||'')+'</td></tr>';});
+    $('tbl').innerHTML=h+'</tbody>';
+  }else{
+    $('cap').textContent=(curRegion||'全部大区')+' · '+rows.length+' 个片区 × '+DATA.roles.length+' 类接口人（左右滑动查看，大区/地区列与表头已冻结；内容过长时悬停查看完整）';
+    $('tbl').className='';
+    let h='<thead><tr><th class="w1 sl0">大区</th><th class="w2 sl1 slE">地区</th>'+DATA.roles.map(r=>'<th>'+r+'</th>').join('')+'</tr></thead><tbody>';
+    let lastRg=null,span=0;const marks=[];
+    rows.forEach((r,i)=>{if(r.region!==lastRg){marks.push([i,1]);lastRg=r.region;}else{marks[marks.length-1][1]++;}});
+    let mi=0;
+    rows.forEach((r,i)=>{
+      h+='<tr>';
+      if(mi<marks.length&&marks[mi][0]===i){h+='<td class="rg w1 sl0" rowspan="'+marks[mi][1]+'">'+esc(r.region)+'</td>';mi++;}
+      h+='<td class="w2 sl1 slE"><b>'+esc(r.area)+'</b></td>';
+      DATA.roles.forEach(ro=>{const v=r.roles[ro];h+='<td>'+clip(v,NARROW[ro]?'clip4':'clip')+'</td>';});
+      h+='</tr>';
+    });
+    $('tbl').innerHTML=h+'</tbody>';
+  }
+}
+function renderResult(){
+  $('tscroll').style.display='none';
+  const nA=new Set(curResult.map(x=>x.area)).size,nR=new Set(curResult.map(x=>x.role)).size;
+  const regions=[...new Set(curResult.map(x=>x.region))];
+  $('cap').textContent='查询结果 · '+nA+' 个片区 × '+nR+' 类角色 · '+regions.join('、');
+  let h='';
+  curResult.forEach(x=>{const p=cleanName(x.value);const pos=p&&DATA.positions[p]||'';
+    h+='<div class="rcard"><div class="rh">'+esc(x.area)+' · '+esc(x.roleShort)+' <span class="chip2">'+esc(x.region)+'</span></div><div class="rbox"><div class="rl">✅ '+esc(x.area)+' '+esc(x.role)+'</div><div class="rn">'+esc(x.value)+(pos?' <span class="rp">（'+esc(pos)+'）</span>':'')+'</div></div></div>';});
+  $('pcard').innerHTML=h;$('pcard').style.display='block';
+}
+function renderPerson(){
+  const p=curPerson;const e=PINDEX[p]||{roles:[],areas:[]};
+  const regions=[...new Set(e.areas.map(a=>a.slice(a.indexOf('(')+1,-1)))];
+  let cover;
+  if(regions.length===1){const rg=regions[0];const all=DATA.rows.filter(r=>r.region===rg).every(r=>e.areas.includes(r.area+'('+rg+')'));cover=all?'全'+rg:e.areas.join('、');}
+  else cover=e.areas.join('、');
+  const pos=DATA.positions[p]||'';
+  $('pcard').innerHTML='<div class="pn">'+esc(p)+(pos?' （'+esc(pos)+'）':'')+'： '+e.roles.map(esc).join('、 ')+'</div><div class="row"><span class="lb">覆盖范围</span><span class="vl">'+esc(cover)+'</span></div>';
+  $('pcard').style.display='block';
+}
+function onSearch(){
+  const q=$('q').value.trim();
+  $('clr').style.display=q?'block':'none';
+  curPerson=null;curAreaFilter=null;curResult=null;
+  if(!q){renderRegionTabs();render();return;}
+  // 1) 人名 / 管家账号匹配
+  const names=Object.keys(PINDEX);
+  let hit=names.find(n=>n.length>=2&&q.includes(n));
+  if(!hit)hit=names.find(n=>n.length>=2&&n.includes(q));
+  if(hit){curPerson=hit;curResult=null;render();return;}
+  // 2) 片区匹配
+  const areaHits=DATA.rows.filter(r=>q.includes(r.area.replace('区',''))||q.includes(r.area)).map(r=>r.area);
+  if(areaHits.length)curAreaFilter=[...new Set(areaHits)];
+  // 3) 大区匹配（搜到片区且无大区词时清空大区，避免互相矛盾筛出空表）
+  const rg=DATA.region_order.find(r=>q.includes(r.replace('大区','')));
+  if(rg)curRegion=rg; else if(areaHits.length)curRegion=null;
+  // 4) 角色匹配：先特定词（AI管家/管家账号）再通用词；未匹配则重置，避免旧选择残留
+  const ro=DATA.roles.find(r=>q.includes(r)||(SPEC[r]||[]).some(k=>q.includes(k)))||DATA.roles.find(r=>(DATA.role_keywords[r]||[]).some(k=>q.includes(k)))||null;
+  // 5) 地区+角色同时命中 → 原版样式「查询结果」卡片
+  if(areaHits.length&&ro){
+    curResult=areaHits.flatMap(a=>DATA.rows.filter(r=>r.area===a).map(r=>({area:a,region:r.region,role:ro,roleShort:ro.replace(/接口人$/,''),value:r.roles[ro]}))).filter(x=>x.value);
+    const rgs=[...new Set(curResult.map(x=>x.region))];
+    if(rgs.length===1)curRegion=rgs[0];
+    curRole=null;
+    renderRegionTabs();renderRoleTabs();render();return;
+  }
+  curResult=null;
+  curRole=ro;
+  renderRegionTabs();renderRoleTabs();render();
+}
+boot();
 </script>
 </body>
 </html>
