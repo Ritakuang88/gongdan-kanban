@@ -78,7 +78,7 @@ td.rg.sl0{background:#fafbfd}
 .pcard .row{display:flex;margin-top:12px;font-size:14px}
 .pcard .row .lb{color:#8a94a3;width:90px;flex:none}
 .pcard .row .vl{font-weight:800}
-.foot{color:#9aa4b2;font-size:12px;margin-top:26px;line-height:1.9}
+.foot{color:#9aa4b3;font-size:12px;margin-top:26px;line-height:1.9}
 .toast{position:fixed;left:50%;bottom:36px;transform:translateX(-50%);background:#333;color:#fff;border-radius:8px;padding:10px 20px;font-size:14px;display:none;z-index:99;max-width:80vw}
 </style>
 </head>
@@ -316,11 +316,17 @@ function renderPerson(){
   else cover=fmtCover(e.areas);
   const pos=DATA.positions[p]||'';
   let h='<div class="pn">'+esc(p)+(pos?' （'+esc(pos)+'）':'')+'： '+e.roles.map(esc).join('、 ')+'<button class="copybtn" id="cpP">📋 复制姓名</button></div><div class="row"><span class="lb">覆盖范围</span><span class="vl">'+esc(cover)+'</span></div>';
-  // 该人名下每个片区的条目，与「地区+角色」查询结果同款卡片
+  // 该人名下的条目按角色聚合：一个角色一张卡，覆盖范围列出全部片区
   const pairs=[];
-  DATA.rows.forEach(r=>{DATA.roles.forEach(ro=>{const v=r.roles[ro];if(!v)return;if(cleanName(v)===p||accountLines(v).includes(p))pairs.push({area:r.area,region:r.region,role:ro,roleShort:ro.replace(/接口人$/,''),value:v});});});
-  pairs.forEach(x=>{
-    h+='<div class="rcard"><div class="rh">'+esc(x.area)+' · '+esc(x.roleShort)+' <span class="chip2">'+esc(x.region)+'</span></div><div class="rbox"><div class="rl">✅ '+esc(x.area)+' '+esc(x.role)+'</div><div class="rn">'+esc(x.value)+(pos?' <span class="rp">（'+esc(pos)+'）</span>':'')+'<button class="copybtn" data-cp="'+tit(x.value)+'">📋 复制</button></div></div></div>';
+  DATA.rows.forEach(r=>{DATA.roles.forEach(ro=>{const v=r.roles[ro];if(!v)return;if(cleanName(v)===p||accountLines(v).includes(p))pairs.push({area:r.area,region:r.region,role:ro,value:v});});});
+  const byRole={},roleOrder=[];
+  pairs.forEach(x=>{if(!byRole[x.role]){byRole[x.role]={regions:[],areas:[]};roleOrder.push(x.role);}const g=byRole[x.role];if(!g.regions.includes(x.region))g.regions.push(x.region);g.areas.push(x.area+'('+x.region+')');});
+  roleOrder.forEach(ro=>{
+    const g=byRole[ro];
+    let cover;
+    if(g.regions.length===1){const rg=g.regions[0];const all=DATA.rows.filter(r=>r.region===rg).every(r=>g.areas.includes(r.area+'('+rg+')'));cover=all?'全'+rg:fmtCover(g.areas);}
+    else cover=fmtCover(g.areas);
+    h+='<div class="rcard"><div class="rh">'+esc(ro)+' <span class="chip2">'+esc(g.regions.join('、'))+'</span></div><div class="rbox"><div class="rl">✅ 覆盖范围：'+esc(cover)+'</div><div class="rn">'+esc(p)+(pos?' <span class="rp">（'+esc(pos)+'）</span>':'')+'<button class="copybtn" data-cp="'+tit(p)+'">📋 复制</button></div></div></div>';
   });
   $('pcard').innerHTML=h;
   $('pcard').style.display='block';
