@@ -215,7 +215,14 @@ td.rg.sl0{background:#fafbfd}
 </div>
 <div class="toast" id="toast"></div>
 <script>
-const DATA = __DATA_JSON__;
+let DATA = null;
+async function boot(){
+  const base = await (await fetch('data.json',{cache:'no-store'})).json();
+  const chunks = await Promise.all(Array.from({length: base.meta.n_chunks}, (_,i)=>fetch('rows-'+(i+1)+'.json',{cache:'no-store'}).then(r=>r.json())));
+  DATA = base;
+  DATA.rows = chunks.flatMap(c=>c.rows);
+  init();
+}
 let curRegion = null, curRole = null, curAreaFilter = null, curPerson = null, curResult = null;
 const $ = id => document.getElementById(id);
 function toast(msg){const t=$('toast');t.textContent=msg;t.style.display='block';clearTimeout(t._h);t._h=setTimeout(()=>t.style.display='none',3500);}
@@ -365,15 +372,15 @@ function onSearch(){
   curRole=ro;
   renderRegionTabs();renderRoleTabs();render();
 }
-init();
+boot();
 </script>
 </body>
 </html>
 """
 
 def build(data):
-    html = TEMPLATE.replace("__DATA_JSON__", json.dumps(data, ensure_ascii=False))
-    return html
+    # 页面改为 fetch 加载 data.json + rows-N.json，模板不再内嵌数据
+    return TEMPLATE
 
 def selfcheck(data, html):
     errs = []
@@ -382,9 +389,10 @@ def selfcheck(data, html):
         errs.append("片区数不一致")
     if m["n_regions"] != len(data["region_order"]):
         errs.append("大区数不一致")
-    # PII 扫描：手机号 / 银行卡 / 内部userId
+    # PII 扫描：手机号 / 银行卡 / 内部userId（页面模板 + 全部数据负载）
+    payload = json.dumps({k: data[k] for k in ("rows", "positions", "notes")}, ensure_ascii=False)
     for pat, name in [(r"1[3-9]\d{9}", "手机号"), (r"\d{16,19}", "银行卡号"), (r"userId", "内部userId"), (r"woNaUWDw", "内部userid")]:
-        if re.search(pat, html):
+        if re.search(pat, html) or re.search(pat, payload):
             errs.append(f"PII残留: {name}")
     # 渲染完整性
     for kw in ["地区对接人速查", "全部大区", "刷新数据", "临时备注"]:
@@ -397,23 +405,52 @@ def selfcheck(data, html):
     print("[自检] 通过：条数核对一致、无手机号/银行卡/内部ID残留、页面元素齐全")
     return True
 
+# rows 分块：按大区分组写入 rows-1..N.json，页面端按 meta.n_chunks 逐个拉取合并
+# （单文件全量内嵌超过 100KB，无法走 API 稳定推送；新大区自动并入最后一块）
+ROW_GROUPS = [("东北大区", "东南大区"), ("华南大区", "华西大区"), ("华北大区",), ("华中大区",), ("华东大区", "浙江大区")]
+
+def write_outputs(data):
+    chunks = [[] for _ in ROW_GROUPS]
+    for r in data["rows"]:
+        for i, g in enumerate(ROW_GROUPS):
+            if r["region"] in g:
+                chunks[i].append(r)
+                break
+        else:
+            chunks[-1].append(r)
+    meta = dict(data["meta"])
+    meta["n_chunks"] = len(chunks)
+    base = {"meta": meta, "region_order": data["region_order"], "roles": data["roles"],
+            "role_keywords": data["role_keywords"], "positions": data["positions"], "notes": data["notes"]}
+    with open(os.path.join(HERE, "data.json"), "w", encoding="utf-8") as f:
+        json.dump(base, f, ensure_ascii=False, indent=1)
+    for i, ch in enumerate(chunks, 1):
+        with open(os.path.join(HERE, f"rows-{i}.json"), "w", encoding="utf-8") as f:
+            json.dump({"rows": ch}, f, ensure_ascii=False, indent=1)
+
+def load_old():
+    """读取上次发布的 data.json + rows-N.json 并合并为完整数据"""
+    old = json.load(open(os.path.join(HERE, "data.json"), encoding="utf-8"))
+    old["rows"] = []
+    for i in range(1, old["meta"].get("n_chunks", 0) + 1):
+        old["rows"] += json.load(open(os.path.join(HERE, f"rows-{i}.json"), encoding="utf-8"))["rows"]
+    return old
+
 def main():
     print("[1/4] 读取企微智能表 ...")
     data = fetch_and_clean()
     keys = ("region_order", "roles", "role_keywords", "rows", "positions", "notes")
-    old_path = os.path.join(HERE, "data.json")
-    if os.path.exists(old_path):
+    if os.path.exists(os.path.join(HERE, "data.json")):
         try:
-            old = json.load(open(old_path, encoding="utf-8"))
+            old = load_old()
             if json.dumps({k: old[k] for k in keys}, ensure_ascii=False, sort_keys=True) == \
                json.dumps({k: data[k] for k in keys}, ensure_ascii=False, sort_keys=True):
                 print("[同步] 智能表自上次同步（" + old["meta"]["synced_at"] + "）后无变化，无需重新发布")
                 sys.exit(0)
         except Exception:
             pass
-    print("[2/4] 写 data.json ...")
-    with open(os.path.join(HERE, "data.json"), "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=1)
+    print("[2/4] 写 data.json + rows 分块 ...")
+    write_outputs(data)
     print("[3/4] 生成 index.html ...")
     html = build(data)
     with open(os.path.join(HERE, "index.html"), "w", encoding="utf-8") as f:
