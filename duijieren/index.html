@@ -83,10 +83,10 @@ td.rg.sl0{background:#fafbfd}
 <script>
 let DATA = null;
 async function boot(){
-  const files = ['data.json','rows-1.json','rows-2.json','rows-3.json','rows-4.json','rows-5.json'];
-  const parts = await Promise.all(files.map(u=>fetch(u,{cache:'no-store'}).then(r=>r.json())));
-  DATA = parts[0];
-  DATA.rows = parts.slice(1).flatMap(p=>p.rows);
+  const base = await (await fetch('data.json',{cache:'no-store'})).json();
+  const chunks = await Promise.all(Array.from({length: base.meta.n_chunks}, (_,i)=>fetch('rows-'+(i+1)+'.json',{cache:'no-store'}).then(r=>r.json())));
+  DATA = base;
+  DATA.rows = chunks.flatMap(c=>c.rows);
   init();
 }
 let curRegion = null, curRole = null, curAreaFilter = null, curPerson = null, curResult = null;
