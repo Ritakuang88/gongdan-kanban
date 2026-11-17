@@ -86,7 +86,7 @@ td.rg.sl0{background:#fafbfd}
 <div class="wrap">
 <h1>地区对接人速查</h1>
 <div class="sub" id="sub"></div>
-<div class="usage">使用【地区+角色】快速搜索，如：<span class="chip">广州设备</span><span class="chip">三河货损</span><span class="chip">上海 货损</span></div>
+<div class="usage">使用【地区+角色】快速搜索，如：<span class="chip">广州设备</span><span class="chip">三河货损</span><span class="chip">上海 货损</span><span style="color:#8a94a3;font-weight:400;font-size:13px;margin-left:10px">输完按回车 ↵ 跳转到结果位置（输入过程页面不会动）</span></div>
 <div class="searchwrap">
 <div class="searchbox"><span class="ico">🔍</span><input id="q" placeholder="输入 地区+角色 / 片区 / 姓名，如：广州设备"><span class="kbd">/ 聚焦 · ↵ 跳转结果 · Esc 清空</span><button class="clr" id="clr">⊗</button></div>
 <div class="sugs" id="sugs"></div>
@@ -271,7 +271,7 @@ function render(){
     $('tbl').className='';
     let h='<thead><tr><th class="wa sl0 slE">地区</th><th class="wb">'+curRole+'</th><th>职位</th></tr></thead><tbody>';
     notesNow().forEach(n=>{h+='<tr class="nrow"><td class="wa sl0 slE">📝 备注</td><td colspan="2">'+esc(n.text)+'</td></tr>';});
-    rows.forEach(r=>{const v=r.roles[curRole];const p=cleanName(v);h+='<tr><td class="wa sl0 slE"><b>'+fmtArea(r.area)+'</b></td><td>'+clip(v,NARROW[curRole]?'clip4':'clip')+'</td><td>'+esc((p&&DATA.positions[p])||'')+'</td></tr>';});
+    rows.forEach(r=>{const v=r.roles[curRole];const p=cleanName(v);h+='<tr><td class="wa sl0 slE"><b>'+fmtArea(r.area)+'</b></td><td>'+clip(v)+'</td><td>'+esc((p&&DATA.positions[p])||'')+'</td></tr>';});
     $('tbl').innerHTML=h+'</tbody>';
   }else{
     $('cap').textContent=(curRegion||'全部大区')+' · '+rows.length+' 个片区 × '+DATA.roles.length+' 类接口人（左右滑动查看；单击任意人名/账号即可复制）';
