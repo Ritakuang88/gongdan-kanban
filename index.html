@@ -490,6 +490,7 @@ td.tl-ot-r{color:#FF0000;font-weight:700}
         <div><label>地区</label><select data-k="地区"><option value="">全部</option></select></div>
         <div><label>是否已超时</label><select data-k="超时状态"><option value="">全部</option><option>已超时</option><option>即将超时</option><option>未超时</option></select></div>
         <div><label>新装/留存</label><select data-k="新装/留存"><option value="">全部</option><option>新装</option><option>留存</option><option>-</option></select></div>
+        <div><label>来单渠道</label><select data-k="来单渠道"><option value="">全部</option></select></div>
         <div><label>处理人（关键词搜索）</label><input data-kw="处理人" placeholder="输入姓名关键词"></div>
         <div><label>货架编码/货架ID（关键词搜索）</label><input data-kw="货架编码|货架ID" placeholder="编码或ID均可"></div>
         <div><label>工单编号（关键词搜索）</label><input data-kw="工单编号" placeholder="输入工单编号"></div>
@@ -912,6 +913,7 @@ function initFilters(){
   document.getElementById('duoCh').innerHTML = '<option value="">全部</option>' + chOpts;
   document.querySelector('#detailFilters select[data-k="大区"]').innerHTML = '<option value="">全部</option>' + rgOpts;
   document.querySelector('#detailFilters select[data-k="地区"]').innerHTML = '<option value="">全部</option>' + uniq('地区').map(o=>`<option>${o}</option>`).join('');
+  document.querySelector('#detailFilters select[data-k="来单渠道"]').innerHTML = '<option value="">全部</option>' + uniq('来单渠道').map(o=>`<option>${o}</option>`).join('');
 }
 // 右上角「总超时工单」：跟随当前视图的大区筛选联动（空=全部大区），并显示较昨日变化
 // 昨日基线优先取构建时内嵌的昨日文件统计(--prev)，否则取本机 localStorage 结存的最近一日快照
