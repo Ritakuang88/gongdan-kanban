@@ -2828,37 +2828,12 @@ function t2DetailCells(r,offset=0){
 function renderBdDuo(){
   const rows=f2rows();
   const deep=t2Deep(rows);
-  const deepWidth=T2_W.reduce((a,b)=>a+b,0), cuiWidth=T2_CUI_W.reduce((a,b)=>a+b,0);
+  const deepWidth=T2_W.reduce((a,b)=>a+b,0);
   let h=`<table style="width:${deepWidth}px">`+t2Colgroup(T2_W)+'<thead><tr>'+t2Head()+'</tr></thead><tbody>';
   deep.forEach(x=>{ h+=`<tr>${t2DetailCells(x.r)}</tr>`; });
   h+='</tbody></table>';
   if(!deep.length) h='<div style="padding:16px;color:#8a857c;font-size:13px">当前筛选下无超时工单</div>';
   $('bdDeep').innerHTML=h;
-  const byShelf={};
-  rows.forEach(r=>{ const k=r['货架id']; if(!k) return; (byShelf[k]=byShelf[k]||[]).push(r); });
-  const groups=Object.entries(byShelf).filter(([,g])=>g.length>=2)
-    .sort((a,b)=> b[1].length-a[1].length || (day(b[1][0])<day(a[1][0])?-1:1));
-  let h2=`<table style="width:${cuiWidth}px">`+t2Colgroup(T2_CUI_W)+'<thead><tr><th class="bd-t2-c1">提报次数</th>'+t2Head(1)+'</tr></thead><tbody>';
-  let shown=0;
-  for(const [sid,g] of groups){
-    if(shown>=20) break;
-    g.forEach((r,gi)=>{
-      if(shown>=20) return;
-      h2+='<tr>'+
-        (gi===0?`<td class="bd-t2-c1" rowspan="${Math.min(g.length,20-shown)}"><span style="background:#c62828;color:#fff;border-radius:8px;padding:1px 7px;font-size:12px">提报${g.length}次</span></td>`:'')+
-        t2DetailCells(r,1)+'</tr>';
-      shown++;
-    });
-  }
-  h2+='</tbody></table>';
-  const cuiWrap=$('bdCuiWrap');
-  if(!shown){
-    if(cuiWrap) cuiWrap.style.display='none';
-    $('bdCui').innerHTML='';
-  }else{
-    if(cuiWrap) cuiWrap.style.display='';
-    $('bdCui').innerHTML=h2;
-  }
 }
 function exportBdDuo(){
   const rows=f2rows();
