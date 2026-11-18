@@ -3,6 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <title>地区工单超时监控看板</title>
 <link rel="icon" href="data:,">
 <script async src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
@@ -2994,5 +2997,27 @@ if(document.querySelector('nav button.active')?.dataset.v==='v5') window.__initB
 })();
 </script>
 
+<script>
+// 防缓存自检：打开页面后向服务器核对最新数据时间；若当前是缓存旧版，自动加载最新版
+(function(){
+  try{
+    if(!/^https?:$/.test(location.protocol)) return;  // 本地 file:// 预览不检查
+    var cur=(window.__EMBEDDED__&&window.__EMBEDDED__.exportTime)||'';
+    if(!cur) return;
+    fetch(location.pathname+'?_v='+Date.now(),{cache:'no-store',headers:{'Range':'bytes=0-524287'}})
+      .then(function(r){ return r.text(); })
+      .then(function(t){
+        var m=t.match(/"exportTime"\s*:\s*"([^"]+)"/);
+        if(m && m[1] && m[1]!==cur){
+          var tip=document.createElement('div');
+          tip.style.cssText='position:fixed;left:50%;top:14px;transform:translateX(-50%);background:#1c2b6d;color:#fff;padding:8px 18px;border-radius:20px;font-size:13px;z-index:99999;box-shadow:0 4px 14px rgba(0,0,0,.25)';
+          tip.textContent='检测到看板已更新，正在加载最新数据…';
+          document.body.appendChild(tip);
+          setTimeout(function(){ location.replace(location.pathname+'?_v='+Date.now()); },600);
+        }
+      }).catch(function(){});
+  }catch(e){}
+})();
+</script>
 </body>
 </html>
