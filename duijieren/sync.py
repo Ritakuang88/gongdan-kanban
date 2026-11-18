@@ -78,7 +78,8 @@ def cell(values, field):
     if isinstance(v, list):
         if not v:
             return None
-        return v[0].get("text")
+        # 多段文本（单元格内换行/多条目）按段拼接，段尾一般自带 \n
+        return "".join(x.get("text", "") for x in v if isinstance(x, dict))
     return v
 
 def clean_person(name):
