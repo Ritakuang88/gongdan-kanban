@@ -52,7 +52,8 @@ td .none{color:#b0b8c4}
 .w2{width:118px;min-width:118px;max-width:118px}
 .nc{display:inline-block;background:#eef3ff;color:#2b6de8;border-radius:4px;font-size:10.5px;font-weight:700;padding:0 4px;margin-left:3px}
 .clip{display:block;max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.clip4{display:block;max-width:56px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.clip4{display:block;max-width:130px;white-space:normal;line-height:1.5;word-break:break-all}
+.clipw{display:block;max-width:320px;white-space:normal;line-height:1.55;word-break:break-all}
 .cp{cursor:pointer;border-radius:5px}
 .cp:hover{background:#eaf1ff;outline:1px dashed #9db9f5}
 .wa{width:180px;min-width:180px}
@@ -133,8 +134,9 @@ function cleanName(v){return v? v.replace(/（.*?）$/,'').trim():v;}
 function fmtArea(a){return esc(a).replace(/（新城）$/,'<span class="nc">新城</span>');}
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 function fmtCell(v){return v?esc(v).replace(/\n+/g,'、'):'';}
+function fmtCellBr(v){return v?esc(v).replace(/[\s　]+$/,'').replace(/\n+/g,'<br>'):'';}
 function tit(v){return v?esc(v).replace(/"/g,'&quot;'):'';}
-function clip(v,cls){cls=cls||'clip';return v?'<div class="'+cls+' cp" data-v="'+tit(v)+'" title="'+tit(v)+'（单击复制）">'+fmtCell(v)+'</div>':'<div class="'+cls+'"><span class="none">—</span></div>';}
+function clip(v,cls,br){cls=cls||'clip';const body=br?fmtCellBr(v):fmtCell(v);return v?'<div class="'+cls+' cp" data-v="'+tit(v)+'" title="'+tit(v)+'（单击复制）">'+body+'</div>':'<div class="'+cls+'"><span class="none">—</span></div>';}
 const NARROW={'合同接口人':1,'结算接口人':1,'费用修改':1};
 const SPEC={'AI群内管家账号':['AI管家','AI群内'],'管家账号（非AI群）':['管家账号','非AI管家']};
 function accountLines(v){return v? v.split(/\n+/).map(s=>s.trim()).filter(Boolean):[];}
@@ -271,7 +273,7 @@ function render(){
     $('tbl').className='';
     let h='<thead><tr><th class="wa sl0 slE">地区</th><th class="wb">'+curRole+'</th><th>职位</th></tr></thead><tbody>';
     notesNow().forEach(n=>{h+='<tr class="nrow"><td class="wa sl0 slE">📝 备注</td><td colspan="2">'+esc(n.text)+'</td></tr>';});
-    rows.forEach(r=>{const v=r.roles[curRole];const p=cleanName(v);h+='<tr><td class="wa sl0 slE"><b>'+fmtArea(r.area)+'</b></td><td>'+clip(v)+'</td><td>'+esc((p&&DATA.positions[p])||'')+'</td></tr>';});
+    rows.forEach(r=>{const v=r.roles[curRole];const p=cleanName(v);h+='<tr><td class="wa sl0 slE"><b>'+fmtArea(r.area)+'</b></td><td>'+clip(v,NARROW[curRole]?'clipw':'clip',NARROW[curRole]?1:0)+'</td><td>'+esc((p&&DATA.positions[p])||'')+'</td></tr>';});
     $('tbl').innerHTML=h+'</tbody>';
   }else{
     $('cap').textContent=(curRegion||'全部大区')+' · '+rows.length+' 个片区 × '+DATA.roles.length+' 类接口人（左右滑动查看；单击任意人名/账号即可复制）';
@@ -284,7 +286,7 @@ function render(){
       h+='<tr>';
       if(mi<marks.length&&marks[mi][0]===i){h+='<td class="rg w1 sl0" rowspan="'+marks[mi][1]+'">'+esc(r.region)+'</td>';mi++;}
       h+='<td class="w2 sl1 slE"><b>'+fmtArea(r.area)+'</b></td>';
-      DATA.roles.forEach(ro=>{const v=r.roles[ro];h+='<td>'+clip(v,NARROW[ro]?'clip4':'clip')+'</td>';});
+      DATA.roles.forEach(ro=>{const v=r.roles[ro];h+='<td>'+clip(v,NARROW[ro]?'clip4':'clip',NARROW[ro]?1:0)+'</td>';});
       h+='</tr>';
     });
     $('tbl').innerHTML=h+'</tbody>';
