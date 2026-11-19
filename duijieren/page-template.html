@@ -336,7 +336,7 @@ function renderPerson(){
     }
     const groups={},order=[];
     ar.forEach(a=>{const i=a.lastIndexOf('(');const rg=a.slice(i+1,-1);if(!groups[rg]){groups[rg]=[];order.push(rg);}groups[rg].push(areaHtml(a));});
-    return order.map(rg=>rg+'：'+groups[rg].join('、')).join('；');
+    return order.map(rg=>(regions.length===1?'':rg+'：')+groups[rg].join('、')).join('；');
   }
   let h='<div class="rcard"><div class="rh">'+esc(p)+(pos?' <span class="chip2">'+esc(pos)+'</span>':'')+' <span class="chip2">'+esc(regions.join('、'))+'</span><button class="copybtn" data-cp="'+tit(p)+'">📋 复制</button></div><div class="rbox">'
     +e.roles.map((ro,i)=>'<div class="pcov">'+(i+1)+'. <b>'+esc(ro)+'</b>：'+lineCov(lists[i])+'</div>').join('')
