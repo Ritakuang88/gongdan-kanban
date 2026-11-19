@@ -58,6 +58,7 @@ td .none{color:#b0b8c4}
 .clip5{display:block;width:360px;max-width:360px;white-space:normal;line-height:1.55;word-break:break-all}
 .clipw{display:block;max-width:320px;white-space:normal;line-height:1.55;word-break:break-all}
 .pcov{margin-top:8px;font-size:13.5px;color:#6b5320;line-height:1.65}
+.pcov .adiff{font-weight:800;color:#c0392b}
 .cp{cursor:pointer;border-radius:5px}
 .cp:hover{background:#eaf1ff;outline:1px dashed #9db9f5}
 .wa{width:180px;min-width:180px}
@@ -320,21 +321,25 @@ function renderPerson(){
   const p=curPerson;const e=PINDEX[p]||{roles:[],areas:[],byRole:{}};
   const regions=[...new Set(e.areas.map(a=>a.slice(a.lastIndexOf('(')+1,-1)))];
   const pos=DATA.positions[p]||'';
-  // 按覆盖范围分组：范围相同的角色合并为一行，逐行列出
-  const groups={},gorder=[];
-  e.roles.forEach(ro=>{
-    const ar=(e.byRole&&e.byRole[ro])||[];
-    const key=ar.slice().sort().join('|');
-    if(!groups[key]){groups[key]={roles:[],areas:ar};gorder.push(key);}
-    groups[key].roles.push(ro);
-  });
-  function coverOf(ar){
+  // 每个角色独立一行；跨角色对比，不是所有角色都覆盖的地区加粗标红
+  const lists=e.roles.map(ro=>(e.byRole&&e.byRole[ro])||[]);
+  const inter=lists.length?lists.reduce((a,b)=>a.filter(x=>b.includes(x))):[];
+  function areaHtml(a){
+    const i=a.lastIndexOf('(');const nm=a.slice(0,i);
+    return inter.includes(a)?esc(nm):'<span class="adiff">'+esc(nm)+'</span>';
+  }
+  function lineCov(ar){
     const regs=[...new Set(ar.map(a=>a.slice(a.lastIndexOf('(')+1,-1)))];
-    if(regs.length===1){const rg=regs[0];const all=DATA.rows.filter(r=>r.region===rg).every(r=>ar.includes(r.area+'('+rg+')'));return all?'全'+rg:fmtCover(ar);}
-    return fmtCover(ar);
+    if(regs.length===1&&ar.every(a=>inter.includes(a))){
+      const rg=regs[0];const all=DATA.rows.filter(r=>r.region===rg).every(r=>ar.includes(r.area+'('+rg+')'));
+      if(all)return '全'+rg;
+    }
+    const groups={},order=[];
+    ar.forEach(a=>{const i=a.lastIndexOf('(');const rg=a.slice(i+1,-1);if(!groups[rg]){groups[rg]=[];order.push(rg);}groups[rg].push(areaHtml(a));});
+    return order.map(rg=>rg+'：'+groups[rg].join('、')).join('；');
   }
   let h='<div class="rcard"><div class="rh">'+esc(p)+(pos?' <span class="chip2">'+esc(pos)+'</span>':'')+' <span class="chip2">'+esc(regions.join('、'))+'</span><button class="copybtn" data-cp="'+tit(p)+'">📋 复制</button></div><div class="rbox">'
-    +gorder.map(k=>{const g=groups[k];return '<div class="pcov"><b>'+esc(g.roles.join('、'))+'</b>：覆盖范围：'+esc(coverOf(g.areas))+'</div>';}).join('')
+    +e.roles.map((ro,i)=>'<div class="pcov">'+(i+1)+'. <b>'+esc(ro)+'</b>：'+lineCov(lists[i])+'</div>').join('')
     +'</div></div>';
   $('pcard').innerHTML=h;
   $('pcard').style.display='block';
