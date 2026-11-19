@@ -52,8 +52,10 @@ td .none{color:#b0b8c4}
 .w2{width:118px;min-width:118px;max-width:118px}
 .nc{display:inline-block;background:#eef3ff;color:#2b6de8;border-radius:4px;font-size:10.5px;font-weight:700;padding:0 4px;margin-left:3px}
 .clip{display:block;max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.clip4{display:block;max-width:130px;white-space:normal;line-height:1.5;word-break:break-all}
+.clip4{display:block;max-width:220px;white-space:normal;line-height:1.55;word-break:break-all}
+.clip5{display:block;max-width:290px;white-space:normal;line-height:1.55;word-break:break-all}
 .clipw{display:block;max-width:320px;white-space:normal;line-height:1.55;word-break:break-all}
+.pcov{margin-top:8px;font-size:13.5px;color:#6b5320;line-height:1.65}
 .cp{cursor:pointer;border-radius:5px}
 .cp:hover{background:#eaf1ff;outline:1px dashed #9db9f5}
 .wa{width:180px;min-width:180px}
@@ -141,7 +143,7 @@ const NARROW={'合同接口人':1,'结算接口人':1,'费用修改':1};
 const SPEC={'AI群内管家账号':['AI管家','AI群内'],'管家账号（非AI群）':['管家账号','非AI管家']};
 function accountLines(v){return v? v.split(/\n+/).map(s=>s.trim()).filter(Boolean):[];}
 let PINDEX={};
-function addP(n,ro,r){if(!n)return;const e=PINDEX[n]||(PINDEX[n]={roles:[],areas:[]});if(!e.roles.includes(ro))e.roles.push(ro);const a=r.area+'('+r.region+')';if(!e.areas.includes(a))e.areas.push(a);}
+function addP(n,ro,r){if(!n)return;const e=PINDEX[n]||(PINDEX[n]={roles:[],areas:[],byRole:{}});if(!e.roles.includes(ro))e.roles.push(ro);const a=r.area+'('+r.region+')';if(!e.areas.includes(a))e.areas.push(a);const ba=e.byRole[ro]||(e.byRole[ro]=[]);if(!ba.includes(a))ba.push(a);}
 function buildIndex(){PINDEX={};DATA.rows.forEach(r=>{DATA.roles.forEach(ro=>{const v=r.roles[ro];if(!v)return;addP(cleanName(v),ro,r);accountLines(v).forEach(l=>addP(l,ro,r));});});}
 function init(){
   $('sub').textContent = DATA.meta.n_regions+' 大区 '+DATA.meta.n_areas+' 片区 · '+DATA.meta.n_roles+' 类接口人 · 数据 '+DATA.meta.synced_at+' 同步';
@@ -286,7 +288,7 @@ function render(){
       h+='<tr>';
       if(mi<marks.length&&marks[mi][0]===i){h+='<td class="rg w1 sl0" rowspan="'+marks[mi][1]+'">'+esc(r.region)+'</td>';mi++;}
       h+='<td class="w2 sl1 slE"><b>'+fmtArea(r.area)+'</b></td>';
-      DATA.roles.forEach(ro=>{const v=r.roles[ro];h+='<td>'+clip(v,NARROW[ro]?'clip4':'clip',NARROW[ro]?1:0)+'</td>';});
+      DATA.roles.forEach(ro=>{const v=r.roles[ro];const nc=ro==='费用修改'?'clip5':(NARROW[ro]?'clip4':'clip');h+='<td>'+clip(v,nc,NARROW[ro]?1:0)+'</td>';});
       h+='</tr>';
     });
     $('tbl').innerHTML=h+'</tbody>';
@@ -311,14 +313,25 @@ function fmtCover(areas){
   return order.map(rg=>rg+'：'+groups[rg].join('、')).join('；');
 }
 function renderPerson(){
-  const p=curPerson;const e=PINDEX[p]||{roles:[],areas:[]};
+  const p=curPerson;const e=PINDEX[p]||{roles:[],areas:[],byRole:{}};
   const regions=[...new Set(e.areas.map(a=>a.slice(a.lastIndexOf('(')+1,-1)))];
-  let cover;
-  if(regions.length===1){const rg=regions[0];const all=DATA.rows.filter(r=>r.region===rg).every(r=>e.areas.includes(r.area+'('+rg+')'));cover=all?'全'+rg:fmtCover(e.areas);}
-  else cover=fmtCover(e.areas);
   const pos=DATA.positions[p]||'';
-  // 单个汇总卡：角色标题 + 覆盖范围 + 姓名/职位 + 复制，不再按角色拆分多张卡
-  let h='<div class="rcard"><div class="rh">'+e.roles.map(esc).join('、')+' <span class="chip2">'+esc(regions.join('、'))+'</span></div><div class="rbox"><div class="rl">✅ 覆盖范围：'+esc(cover)+'</div><div class="rn">'+esc(p)+(pos?' <span class="rp">（'+esc(pos)+'）</span>':'')+'<button class="copybtn" data-cp="'+tit(p)+'">📋 复制</button></div></div></div>';
+  // 按覆盖范围分组：范围相同的角色合并为一行，逐行列出
+  const groups={},gorder=[];
+  e.roles.forEach(ro=>{
+    const ar=(e.byRole&&e.byRole[ro])||[];
+    const key=ar.slice().sort().join('|');
+    if(!groups[key]){groups[key]={roles:[],areas:ar};gorder.push(key);}
+    groups[key].roles.push(ro);
+  });
+  function coverOf(ar){
+    const regs=[...new Set(ar.map(a=>a.slice(a.lastIndexOf('(')+1,-1)))];
+    if(regs.length===1){const rg=regs[0];const all=DATA.rows.filter(r=>r.region===rg).every(r=>ar.includes(r.area+'('+rg+')'));return all?'全'+rg:fmtCover(ar);}
+    return fmtCover(ar);
+  }
+  let h='<div class="rcard"><div class="rh">'+esc(p)+(pos?' <span class="chip2">'+esc(pos)+'</span>':'')+' <span class="chip2">'+esc(regions.join('、'))+'</span><button class="copybtn" data-cp="'+tit(p)+'">📋 复制</button></div><div class="rbox">'
+    +gorder.map(k=>{const g=groups[k];return '<div class="pcov"><b>'+esc(g.roles.join('、'))+'</b>：覆盖范围：'+esc(coverOf(g.areas))+'</div>';}).join('')
+    +'</div></div>';
   $('pcard').innerHTML=h;
   $('pcard').style.display='block';
   $('pcard').querySelectorAll('.copybtn[data-cp]').forEach(b=>b.onclick=()=>copyText(cleanName(b.dataset.cp)));
