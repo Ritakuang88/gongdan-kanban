@@ -86,13 +86,48 @@ td.rg.sl0{background:#fafbfd}
 .pcard .row .vl{font-weight:800}
 .foot{color:#9aa4b2;font-size:12px;margin-top:26px;line-height:1.9}
 .toast{position:fixed;left:50%;bottom:36px;transform:translateX(-50%);background:#333;color:#fff;border-radius:8px;padding:10px 20px;font-size:14px;display:none;z-index:99;max-width:80vw}
-@media (max-width:768px){th.sl0,th.sl1,td.sl0,td.sl1{position:static;left:auto}.slE{box-shadow:none}.searchbox .kbd{display:none}}
+.mtabs{display:flex;gap:10px;margin-top:18px;border-bottom:2px solid #dfe5ee;padding-bottom:0}
+.mtab{background:none;border:none;font-size:16px;font-weight:700;color:#7a8494;padding:10px 22px 12px;cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-2px;font-family:inherit}
+.mtab:hover{color:#2b6de8}
+.mtab.on{color:#2b6de8;border-bottom-color:#2b6de8}
+.mcard{background:#fff;border-radius:10px;padding:20px 24px;margin-top:20px}
+.mcard .ct{font-size:17px;font-weight:800;color:#15181d;margin-bottom:14px}
+.mcard .ct .badge{background:#e8f0ff;color:#2b6de8;border-radius:6px;font-size:12px;font-weight:700;padding:2px 8px;margin-left:8px;vertical-align:2px}
+.plist{font-size:15px;color:#333;line-height:2.1}
+.plist .lb{font-weight:800;color:#15181d}
+.plist ul{list-style:none;margin-left:26px}
+.plist .who{font-weight:800;color:#15181d}
+.frow{display:flex;flex-wrap:wrap;align-items:center;gap:14px;font-size:15px;color:#444;background:#f8f9fc;border-radius:10px;padding:14px 18px;font-weight:700}
+.frow .var{color:#2b6de8}
+.frow .op{color:#9aa4b2}
+.calc{display:flex;flex-wrap:wrap;gap:16px;align-items:flex-end;margin-top:6px}
+.fld{display:flex;flex-direction:column;gap:6px}
+.fld label{font-size:13px;color:#7a8494;font-weight:700}
+.fld .inwrap{display:flex;align-items:center;background:#fff;border:2px solid #d8dee8;border-radius:10px;padding:0 12px;transition:border-color .15s}
+.fld .inwrap:focus-within{border-color:#2f7bff}
+.fld input{border:none;outline:none;font-size:17px;padding:11px 4px;width:170px;color:#222;background:transparent;font-family:inherit}
+.fld .unit{color:#9aa4b2;font-size:14px;flex:none}
+.calcbtn{border:none;background:#2b6de8;color:#fff;border-radius:10px;padding:12px 34px;font-size:16px;font-weight:700;cursor:pointer;font-family:inherit}
+.calcbtn:hover{background:#1f5bd0}
+.result{margin-top:18px;background:#fdeee0;border-radius:10px;padding:18px 22px;display:none}
+.result.show{display:block}
+.result .rl{color:#b5563c;font-weight:700;font-size:13.5px}
+.result .rn{font-size:30px;font-weight:800;color:#c0392b;margin-top:6px}
+.result .rn .unit{font-size:15px;color:#b5563c;font-weight:700;margin-left:6px}
+.result .rp{font-size:13px;color:#666;margin-top:8px;line-height:1.7}
+.err{color:#c0392b;font-size:13px;margin-top:10px;display:none;font-weight:700}
+@media (max-width:768px){th.sl0,th.sl1,td.sl0,td.sl1{position:static;left:auto}.slE{box-shadow:none}.searchbox .kbd{display:none}.fld input{width:130px}.calcbtn{width:100%}}
 </style>
 </head>
 <body>
 <div class="wrap">
 <h1>地区对接人速查</h1>
 <div class="sub" id="sub"></div>
+<div class="mtabs">
+  <button class="mtab on" id="tabA" onclick="showTab('A')">地区对接人速查</button>
+  <button class="mtab" id="tabB" onclick="showTab('B')">溢价退差计算</button>
+</div>
+<div id="paneA">
 <div class="usage">使用【地区+角色】快速搜索，如：<span class="chip">广州设备</span><span class="chip">三河货损</span><span class="chip">上海 货损</span><span style="color:#8a94a3;font-weight:400;font-size:13px;margin-left:10px">输完按回车 ↵ 跳转到结果位置（输入过程页面不会动）</span></div>
 <div class="searchwrap">
 <div class="searchbox"><span class="ico">🔍</span><input id="q" type="search" enterkeyhint="search" placeholder="输入 地区+角色 / 片区 / 姓名，如：广州设备"><span class="kbd">/ 聚焦 · ↵ 跳转结果 · Esc 清空</span><button class="clr" id="clr">⊗</button><button class="sbtn" id="sbtn">搜索</button></div>
@@ -105,6 +140,44 @@ td.rg.sl0{background:#fafbfd}
 <div class="pcard" id="pcard" style="display:none"></div>
 <div class="cap" id="cap"></div>
 <div class="tscroll" id="tscroll"><table id="tbl"></table></div>
+</div>
+<div id="paneB" style="display:none">
+  <div class="mcard">
+    <div class="ct">🧮 溢价退差计算<span class="badge">客服输入应付金额 + 溢价分成比例</span></div>
+    <div class="frow">
+      溢价退差 <span class="op">=</span> <span class="var">订单应付金额</span> <span class="op">−</span> <span class="var">订单应付金额</span> <span class="op">÷（1 +</span> <span class="var">溢价分成比例</span><span class="op">）</span>
+    </div>
+    <div class="calc" style="margin-top:16px">
+      <div class="fld">
+        <label>订单应付金额</label>
+        <div class="inwrap"><input id="amt" type="number" min="0" step="0.01" placeholder="如 1250.00" enterkeyhint="go"><span class="unit">元</span></div>
+      </div>
+      <div class="fld">
+        <label>溢价分成比例</label>
+        <div class="inwrap"><input id="rate" type="number" min="0" step="0.01" placeholder="如 20" enterkeyhint="go"><span class="unit">%</span></div>
+      </div>
+      <button class="calcbtn" onclick="calcRefund()">计算退差</button>
+    </div>
+    <div class="err" id="cerr"></div>
+    <div class="result" id="cresult">
+      <div class="rl">溢价退差</div>
+      <div class="rn"><span id="crv">—</span><span class="unit">元</span></div>
+      <div class="rp" id="crdetail"></div>
+    </div>
+  </div>
+  <div class="mcard">
+    <div class="ct">📍 查询路径指引</div>
+    <div class="plist">
+      <div><span class="lb">订单应付金额查询路径：</span>交易 → 交易订单 → 智能柜销售订单 → 智能柜销售订单详情</div>
+      <div style="margin-top:6px"><span class="lb">溢价分成比例查询路径：</span>
+        <ul>
+          <li><span class="who">一线</span> → 一线工作台 → 费用类型 → 详情 → 合作信息 → 浮动比例</li>
+          <li><span class="who">管家/售后</span> → BOMS → 场地供应商 → 费用类型 → 费用明细</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
 <div class="foot">数据来源：企微智能表格 [地区对接人名单]（静态快照，同步时间见顶部）· 名单更新后由维护者在 Kimi 说「更新对接人」重新生成并发布<br>[找责任督导] / [责任督导] / [督导] 表示该片区未指定专人 · 单击任意人名/账号即可复制，粘贴到企微搜索找人</div>
 </div>
 <div class="toast" id="toast"></div>
@@ -162,7 +235,7 @@ function init(){
     if(c){const v=c.dataset.v;copyText(v.indexOf('\n')>=0?v:cleanName(v));}
   });
   document.addEventListener('keydown', e=>{
-    if(e.key==='/'&&document.activeElement!==$('q')){e.preventDefault();$('q').focus();}
+    if(e.key==='/'&&!['q','amt','rate'].includes(document.activeElement&&document.activeElement.id)){e.preventDefault();$('q').focus();}
     if(e.key==='Escape'&&document.activeElement===$('q')){$('q').value='';onSearch();}
     if(e.key==='Escape'){hideSugs();}
   });
@@ -385,6 +458,28 @@ function commitSearch(){
   if(ro||areaHits.length)saveRecent(q);
   renderRegionTabs();renderRoleTabs();render();
 }
+function showTab(t){
+  $('paneA').style.display = t==='A'?'block':'none';
+  $('paneB').style.display = t==='B'?'block':'none';
+  $('tabA').classList.toggle('on', t==='A');
+  $('tabB').classList.toggle('on', t==='B');
+  window.scrollTo(0,0);
+}
+function calcRefund(){
+  const amt = parseFloat($('amt').value);
+  const rate = parseFloat($('rate').value);
+  const err = $('cerr'), res = $('cresult');
+  err.style.display='none'; res.classList.remove('show');
+  if(isNaN(amt)||amt<0){ err.textContent='请输入有效的订单应付金额'; err.style.display='block'; return; }
+  if(isNaN(rate)||rate<0){ err.textContent='请输入有效的溢价分成比例（填百分数，如 20 表示 20%）'; err.style.display='block'; return; }
+  const r = rate/100;
+  const diff = amt - amt/(1+r);
+  $('crv').textContent = diff.toFixed(2);
+  $('crdetail').textContent = '计算过程：'+amt.toFixed(2)+' − '+amt.toFixed(2)+' ÷（1 + '+rate+'%）＝ '+amt.toFixed(2)+' − '+(amt/(1+r)).toFixed(2)+' ＝ '+diff.toFixed(2)+' 元';
+  res.classList.add('show');
+}
+$('amt').addEventListener('keydown', e=>{ if(e.key==='Enter') calcRefund(); });
+$('rate').addEventListener('keydown', e=>{ if(e.key==='Enter') calcRefund(); });
 boot();
 </script>
 </body>
