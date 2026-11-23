@@ -221,9 +221,10 @@ function clip(v,cls,br){cls=cls||'clip';const body=br?fmtCellBr(v):fmtCell(v);re
 const NARROW={'合同接口人':1,'结算接口人':1,'费用修改':1};
 const SPEC={'AI群内管家账号':['AI管家','AI群内'],'管家账号（非AI群）':['管家账号','非AI管家']};
 function accountLines(v){return v? v.split(/\n+/).map(s=>s.trim()).filter(Boolean):[];}
+function indexName(v){return v?v.replace(/（[^（）]*）|\([^()]*\)/g,'').replace(/^[、，,\s]+|[、，,\s]+$/g,''):'';}
 let PINDEX={};
 function addP(n,ro,r){if(!n)return;const e=PINDEX[n]||(PINDEX[n]={roles:[],areas:[],byRole:{}});if(!e.roles.includes(ro))e.roles.push(ro);const a=r.area+'('+r.region+')';if(!e.areas.includes(a))e.areas.push(a);const ba=e.byRole[ro]||(e.byRole[ro]=[]);if(!ba.includes(a))ba.push(a);}
-function buildIndex(){PINDEX={};DATA.rows.forEach(r=>{DATA.roles.forEach(ro=>{const v=r.roles[ro];if(!v)return;addP(cleanName(v),ro,r);accountLines(v).forEach(l=>addP(l,ro,r));});});}
+function buildIndex(){PINDEX={};DATA.rows.forEach(r=>{DATA.roles.forEach(ro=>{const v=r.roles[ro];if(!v)return;accountLines(v).forEach(l=>addP(indexName(l),ro,r));});});}
 function init(){
   $('sub').textContent = DATA.meta.n_regions+' 大区 '+DATA.meta.n_areas+' 片区 · '+DATA.meta.n_roles+' 类接口人 · 数据 '+DATA.meta.synced_at+' 同步';
   buildIndex();
