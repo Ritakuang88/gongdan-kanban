@@ -43,7 +43,8 @@ WECOM_PKG = "@wecom/cli@1.3.4"
 def run_cli(args):
     # Windows 下 npx 是 .cmd 包装，须 shell=True 才能解析
     p = subprocess.run(["npx", "-y", WECOM_PKG] + args, capture_output=True,
-                       text=True, encoding="utf-8", errors="replace", shell=True)
+                       text=True, encoding="utf-8", errors="replace", shell=True,
+                       creationflags=(subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0))
     if p.returncode != 0:
         raise RuntimeError("wecom-cli 失败: " + p.stderr[:500])
     m = re.search(r"\{.*\}", p.stdout, re.S)
