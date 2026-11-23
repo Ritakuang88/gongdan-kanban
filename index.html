@@ -690,6 +690,8 @@ td.tl-ot-r{color:#FF0000;font-weight:700}
         <div><label>地区</label><select id="bd2Dt"><option value="">全部</option></select></div>
         <div><label>创建时间从</label><input id="bd2From" type="date" value="2026-09-01"></div>
         <div><label>创建时间至</label><input id="bd2To" type="date" value="2026-11-22"></div>
+        <div><label>工单编号（关键词）</label><input id="bd2No" type="text" placeholder="输入工单编号关键词"></div>
+        <div><label>货架id/编码（关键词）</label><input id="bd2Sid" type="text" placeholder="输入货架id或编码"></div>
         <button class="btn primary filter-submit" type="button" id="bdQ2">查询</button>
         <button class="btn" type="button" id="bd2Export">导出明细</button>
       </div>
@@ -746,6 +748,8 @@ td.tl-ot-r{color:#FF0000;font-weight:700}
         <div><label>地区</label><select id="bd4Dt"><option value="">全部</option></select></div>
         <div><label>创建时间从</label><input id="bd4From" type="date" value="2026-09-01"></div>
         <div><label>创建时间至</label><input id="bd4To" type="date" value="2026-11-22"></div>
+        <div><label>工单编号（关键词）</label><input id="bd4No" type="text" placeholder="输入工单编号关键词"></div>
+        <div><label>货架id/编码（关键词）</label><input id="bd4Sid" type="text" placeholder="输入货架id或编码"></div>
         <button class="btn primary filter-submit" type="button" id="bdQ4">查询</button>
         <button class="btn" type="button" id="bd4Export">导出明细</button>
       </div>
@@ -2682,14 +2686,20 @@ function f1rows(){
 }
 function f2rows(){
   const ot=selectedOptions('bd2Ot'), st=$('bd2St').value, owned=$('bd2RegionOwned').value,
-        rg=$('bd2Rg').value, dt=$('bd2Dt').value, inR=dateRange('bd2From','bd2To','创建时间');
+        rg=$('bd2Rg').value, dt=$('bd2Dt').value, inR=dateRange('bd2From','bd2To','创建时间'),
+        no=($('bd2No')?$('bd2No').value.trim():''), sid=($('bd2Sid')?$('bd2Sid').value.trim():'');
   return BD.bdRows.filter(r=>otMatch(ot)(r)&&stMatch(st)(r)&&
     (!owned||(owned==='是'?r['处理人']!=='客服名下':r['处理人']==='客服名下'))&&
-    (!rg||r['大区']===rg)&&(!dt||r['地区']===dt)&&inR(r));
+    (!rg||r['大区']===rg)&&(!dt||r['地区']===dt)&&inR(r)&&
+    (!no||String(r['工单编号']).includes(no))&&
+    (!sid||String(r['货架id']).includes(sid)||String(r['货架编码']||'').includes(sid)));
 }
 function f4rows(){
-  const ot=selectedOptions('bd4Ot'), st=$('bd4St').value, rg=$('bd4Rg').value, dt=$('bd4Dt').value, inR=dateRange('bd4From','bd4To','创建时间');
-  return BD.bdRows.filter(r=>otMatch(ot)(r)&&stMatch(st)(r)&&(!rg||r['大区']===rg)&&(!dt||r['地区']===dt)&&inR(r));
+  const ot=selectedOptions('bd4Ot'), st=$('bd4St').value, rg=$('bd4Rg').value, dt=$('bd4Dt').value, inR=dateRange('bd4From','bd4To','创建时间'),
+        no=($('bd4No')?$('bd4No').value.trim():''), sid=($('bd4Sid')?$('bd4Sid').value.trim():'');
+  return BD.bdRows.filter(r=>otMatch(ot)(r)&&stMatch(st)(r)&&(!rg||r['大区']===rg)&&(!dt||r['地区']===dt)&&inR(r)&&
+    (!no||String(r['工单编号']).includes(no))&&
+    (!sid||String(r['货架id']).includes(sid)||String(r['货架编码']||'').includes(sid)));
 }
 
 // ---------- 下钻弹窗 ----------
@@ -2965,11 +2975,11 @@ function exportBdT4(){
 function bindAutoFilter(buttonId, render){
   const btn=$(buttonId); if(!btn) return;
   const filters=btn.closest('.filters');
-  btn.remove();
+  // 2026-11-23 应 Rita 要求：保留「查询」按钮，筛选条件在点击按钮（或输入框回车）时才生效。
+  btn.addEventListener('click', render);
   filters.querySelectorAll('select,input').forEach(el=>{
     if(el.closest('.msel-pop')) return;
-    const event=(el.tagName==='SELECT'||el.type==='date')?'change':'input';
-    el.addEventListener(event,render);
+    el.addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); btn.click(); } });
   });
 }
 let bdInited=false;
