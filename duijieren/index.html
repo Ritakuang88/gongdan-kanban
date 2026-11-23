@@ -356,7 +356,7 @@ function render(){
     $('tbl').className='';
     let h='<thead><tr><th class="wa sl0 slE">地区</th><th class="wb">'+curRole+'</th><th>职位</th></tr></thead><tbody>';
     notesNow().forEach(n=>{h+='<tr class="nrow"><td class="wa sl0 slE">📝 备注</td><td colspan="2">'+esc(n.text)+'</td></tr>';});
-    rows.forEach(r=>{const v=r.roles[curRole];const p=cleanName(v);h+='<tr><td class="wa sl0 slE"><b>'+fmtArea(r.area)+'</b></td><td>'+clip(v,NARROW[curRole]?'clipw':'clip',NARROW[curRole]?1:0)+'</td><td>'+esc((p&&DATA.positions[p])||'')+'</td></tr>';});
+    rows.forEach(r=>{const v=r.roles[curRole];const p=cleanName(v);h+='<tr><td class="wa sl0 slE"><b>'+fmtArea(r.area)+'</b></td><td>'+clip(v,'clipw',1)+'</td><td>'+esc((p&&DATA.positions[p])||'')+'</td></tr>';});
     $('tbl').innerHTML=h+'</tbody>';
   }else{
     $('cap').textContent=(curRegion||'全部大区')+' · '+rows.length+' 个片区 × '+DATA.roles.length+' 类接口人（左右滑动查看；单击任意人名/账号即可复制）';
@@ -383,7 +383,7 @@ function renderResult(){
   $('cap').textContent='查询结果 · '+nA+' 个片区 × '+nR+' 类角色 · '+regions.join('、')+' · 点「复制」直接粘贴到企微';
   let h='';
   curResult.forEach(x=>{const p=cleanName(x.value);const pos=p&&DATA.positions[p]||'';
-    h+='<div class="rcard"><div class="rh">'+esc(x.area)+' · '+esc(x.roleShort)+' <span class="chip2">'+esc(x.region)+'</span></div><div class="rbox"><div class="rl">✅ '+esc(x.area)+' '+esc(x.role)+'</div><div class="rn">'+esc(x.value)+(pos?' <span class="rp">（'+esc(pos)+'）</span>':'')+'<button class="copybtn" data-cp="'+tit(x.value)+'">📋 复制</button></div></div></div>';});
+    h+='<div class="rcard"><div class="rh">'+esc(x.area)+' · '+esc(x.roleShort)+' <span class="chip2">'+esc(x.region)+'</span></div><div class="rbox"><div class="rl">✅ '+esc(x.area)+' '+esc(x.role)+'</div><div class="rn">'+fmtCellBr(x.value)+(pos?' <span class="rp">（'+esc(pos)+'）</span>':'')+'<button class="copybtn" data-cp="'+tit(x.value)+'">📋 复制</button></div></div></div>';});
   $('pcard').innerHTML=h;$('pcard').style.display='block';
   $('pcard').querySelectorAll('.copybtn').forEach(b=>b.onclick=()=>copyText(cleanName(b.dataset.cp)));
 }
