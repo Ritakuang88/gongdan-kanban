@@ -213,7 +213,7 @@ def main():
     write_outputs(data)
     print("[3/4] 生成 index.html ...")
     html = build(data)
-    with open(os.path.join(HERE, "index.html"), "w", encoding="utf-8") as f:
+    with open(os.path.join(HERE, "index.html"), "w", encoding="utf-8", newline="\n") as f:
         f.write(html)
     print("[4/4] 自检 ...")
     ok = selfcheck(data, html)
