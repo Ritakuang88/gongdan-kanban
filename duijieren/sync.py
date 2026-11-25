@@ -37,14 +37,24 @@ ROLES = [
     ("管家账号（非AI群）", "管家账号（非AI群）", ["管家账号"]),
 ]
 
-# Kimi Work 企微插件：固定版本 npx 调用，无需 shim
+# 优先直接运行本地原生程序，避免 npx / cmd 在 Windows 上反复弹出黑窗
 WECOM_PKG = "@wecom/cli@1.3.4"
+WECOM_NATIVE = os.path.join(HERE, ".wecom-cli", "node_modules", "@wecom",
+                            "cli-win32-x64", "bin", "wecom-cli.exe")
 
 def run_cli(args):
-    # Windows 下 npx 是 .cmd 包装，须 shell=True 才能解析
-    p = subprocess.run(["npx", "-y", WECOM_PKG] + args, capture_output=True,
-                       text=True, encoding="utf-8", errors="replace", shell=True,
-                       creationflags=(subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0))
+    use_native = os.path.isfile(WECOM_NATIVE)
+    cmd = ([WECOM_NATIVE] if use_native else ["npx", "-y", WECOM_PKG]) + args
+    startupinfo = None
+    creationflags = 0
+    if os.name == "nt":
+        startupinfo = subprocess.STARTUPINFO()
+        startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+        startupinfo.wShowWindow = subprocess.SW_HIDE
+        creationflags = subprocess.CREATE_NO_WINDOW
+    p = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace",
+                       shell=(os.name == "nt" and not use_native), startupinfo=startupinfo,
+                       creationflags=creationflags)
     if p.returncode != 0:
         raise RuntimeError("wecom-cli 失败: " + p.stderr[:500])
     m = re.search(r"\{.*\}", p.stdout, re.S)
