@@ -108,6 +108,8 @@ def fetch_and_clean():
         t = cell(r["values"], "职位")
         if n:
             positions[n.strip()] = t or ""
+    # 职位表漏录时的兜底；一旦表内有刘依晴，以智能表为准。
+    positions.setdefault("刘依晴", "高级经营分析专员")
     rows, notes = [], []
     for r in main_recs:
         v = r["values"]
