@@ -44,7 +44,7 @@ h1{font-size:26px;font-weight:800;color:#15181d}
 .notes .ni{margin-top:6px;font-size:14px;color:#7a5c00;font-weight:700}
 .notes .ni .tag{color:#b5563c;margin-right:10px}
 .cap{color:#8a94a3;font-size:13px;margin:20px 0 10px;font-weight:700}
-.remote-tip{color:#7a5c00;background:#fff8e6;border:1px solid #e6d38a;border-radius:8px;padding:9px 12px;margin:0 0 10px;font-size:16px;font-weight:700;line-height:1.7}
+.remote-tip{color:#7a5c00;background:#fff8e6;border:1px solid #e6d38a;border-radius:8px;padding:9px 12px;margin:0 0 10px;font-size:14px;font-weight:700;line-height:1.7}
 .tscroll{overflow:auto;background:#fff;border-radius:10px;max-height:560px}
 table{border-collapse:separate;border-spacing:0;width:100%;font-size:14px}
 th{background:#f2f4f8;color:#333;font-size:13px;text-align:left;padding:11px 12px;position:sticky;top:0;z-index:2;white-space:nowrap;border-bottom:1px solid #dfe5ee}
@@ -351,7 +351,7 @@ function render(){
     const marks=[];let lastRg=null;
     rows.forEach((r,i)=>{if(r.region!==lastRg){marks.push([i,1]);lastRg=r.region;}else{marks[marks.length-1][1]++;}});
     let mi=0;
-    rows.forEach((r,i)=>{h+='<tr>';if(mi<marks.length&&marks[mi][0]===i){h+='<td class="rg w1 sl0" rowspan="'+marks[mi][1]+'">'+esc(r.region)+'</td>';mi++;}h+='<td class="wa sl1 slE"><b>'+fmtArea(r.area)+'</b></td><td>'+clip(r.roles[curRole])+'</td></tr>';});
+    rows.forEach((r,i)=>{h+='<tr>';if(mi<marks.length&&marks[mi][0]===i){h+='<td class="rg w1 sl0" rowspan="'+marks[mi][1]+'">'+esc(r.region)+'</td>';mi++;}h+='<td class="wa sl1 slE"><b>'+fmtArea(r.area)+'</b></td><td>'+clip(r.roles[curRole],'clipw',1)+'</td></tr>';});
     $('tbl').innerHTML=h+'</tbody>';
   }else if(curRole){
     $('cap').textContent=curRole+' · '+(curRegion||'全部大区')+' · '+rows.length+' 个片区 · 单击人名可复制';
