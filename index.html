@@ -833,12 +833,12 @@ function classify(row){
   const missing = v => v==null || ['','nan','none','null','undefined'].includes(String(v).trim().toLowerCase());
   const region = missing(row['大区']) ? '工单无大区信息' : String(row['大区']).trim();
   const district = missing(row['地区']) ? '工单无地区信息' : String(row['地区']).trim();
-  const used = networkdays(row['创建时间'], TODAY) - 2;
+  const used = networkdays(row['创建时间'], TODAY) - 1;  // 创建次日起算
   const sla = CLOSURE[row['工单分类三级']];
   let cd = null, st = '未超时';
   if (sla !== undefined){
     cd = sla - used;                        // 闭环倒计时 = 标准 - 已处理
-    st = cd<=0 ? '已超时' : cd<=2 ? '即将超时' : '未超时';
+    st = cd<0 ? '已超时' : cd<=2 ? '即将超时' : '未超时';
   }
   return {...row, 大区:region, 地区:district, 已处理时长:used, 标准闭环时长:sla, 闭环倒计时:cd,
           超时天数: cd===null ? null : -cd,   // 超时天数：正数=已超的工作日数
