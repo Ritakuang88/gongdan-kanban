@@ -216,8 +216,8 @@ function copyText(t){
 function cleanName(v){return v? v.replace(/（.*?）$/,'').trim():v;}
 function fmtArea(a){return esc(a).replace(/（新城）$/,'<span class="nc">新城</span>');}
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
-function fmtCell(v){return v?esc(v).replace(/\n+/g,'、'):'';}
-function fmtCellBr(v){return v?esc(v).replace(/[\s　]+$/,'').replace(/\n+/g,'<br>'):'';}
+function fmtCell(v){return v?esc(v).replace(/^[\s　]+|[\s　]+$/g,'').replace(/\n+/g,'、'):'';}
+function fmtCellBr(v){return v?esc(v).replace(/^[\s　]+|[\s　]+$/g,'').replace(/\n+/g,'<br>'):'';}
 function tit(v){return v?esc(v).replace(/"/g,'&quot;'):'';}
 function clip(v,cls,br){cls=cls||'clip';const body=br?fmtCellBr(v):fmtCell(v);return v?'<div class="'+cls+' cp" data-v="'+tit(v)+'" title="'+tit(v)+'（单击复制）">'+body+'</div>':'<div class="'+cls+'"><span class="none">—</span></div>';}
 const NARROW={'合同接口人':1,'结算接口人':1,'费用修改':1};
